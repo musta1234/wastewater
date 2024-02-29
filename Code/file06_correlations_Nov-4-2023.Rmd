@@ -1,0 +1,201 @@
+----
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+
+```{r bigcorr_subvariant, echo=TRUE}
+
+bigcorr <- 
+  bigfile %>% 
+  ungroup() %>%
+  mutate(location_name=replace(location_name, 
+                               location_name == "United States of America", "USA")
+         ) %>%
+  mutate(short_loc = substr(location_name, 1, 5),
+         subvariant = case_when( subvariant == "BA.1" ~ "BA1",
+                                  subvariant == "BA.2" ~ "BA2",
+                                  subvariant == "BA.4 BA.5" ~ "BA45",
+                                 .default = subvariant
+           
+         )) %>% 
+  select(date, short_loc, subvariant, idr_v5, inf_mean, daily_cases_15dc) %>%
+  rename(cases = daily_cases_15dc, idr = idr_v5, inf = inf_mean) %>% 
+  filter(!is.na(subvariant), !is.na(idr), !is.na(inf)) %>%
+  pivot_wider(names_from = c("short_loc"), 
+              values_from =  c("idr", "inf", "cases")) %>% 
+  #replace all NULL values with NA
+  mutate(across(idr_South:cases_Nethe, ~replace(., lengths(.) == 0, NA))) %>%
+  as.data.frame()
+
+#https://stackoverflow.com/questions/24829027/unimplemented-type-list-when-trying-to-write-table
+#bigcorr[3: length(names(bigcorr))] <- apply(bigcorr[3: length(names(bigcorr))],2,as.character)
+#bigcorr[3: length(names(bigcorr))] <- apply(bigcorr[3: length(names(bigcorr))],2,as.numeric)
+
+
+var_ba1 <- bigcorr %>% filter(subvariant == "BA1") %>% 
+ select(starts_with("idr_")) %>% cor(., use = "pairwise.complete.obs") %>% 
+  as.data.frame() %>% rownames_to_column() %>% 
+  mutate(subvariant = "BA1")
+
+var_ba2 <- bigcorr %>% filter(subvariant == "BA2") %>% 
+ select(starts_with("idr_")) %>% cor(., use = "pairwise.complete.obs") %>% 
+ as.data.frame() %>% rownames_to_column() %>% 
+ mutate(subvariant = "BA2")
+
+var_ba45 <- bigcorr %>% filter(subvariant == "BA45") %>% 
+ select(starts_with("idr_")) %>% cor(., use = "pairwise.complete.obs") %>% 
+ as.data.frame() %>% rownames_to_column() %>% 
+ mutate(subvariant = "BA45")
+
+#correlate every country idr vs case_load group_by subvariant
+#Generate a series of models and alphas, betas and 
+
+correlation_subvar <- 
+  rbind(var_ba1, var_ba2, var_ba45) %>%
+  pivot_wider(names_from = "subvariant", 
+              values_from =  starts_with("idr"))
+
+
+write.csv(correlation_subvar,
+          file = paste0(getwd(), "/../output/" ,"correlation_subvar_", 
+                        paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE, na = "", row.names = FALSE)
+
+```
+
+
+```{r summarize_ihme, echo=TRUE}
+#convert correlation matrix to distance matrix for hclust
+mat_ba45 <- as.matrix(var_ba45[ ,2:28])
+
+colnames(mat_ba45) <- colnames(mat_ba45) %>% gsub("idr_", "", ., fixed = TRUE)
+rownames(mat_ba45) <- colnames(mat_ba45)
+
+hc <- hclust(dist(mat_ba45))
+
+plot(as.dendrogram(hc))
+abline(h=2)
+
+
+write.csv(mat_ba45,
+          file = paste0(getwd(), "/../output/" ,"mat_ba45_", 
+                        paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE, na = "", row.names = FALSE)
+
+#install.packages("hclust", dependencies = TRUE)
+#library(hclust)
+
+
+```
+
+
+```{r summarize_ihme, echo=TRUE}
+    # idr vs current daily case load
+    # idr vs 2 weeks average case load
+    # idr vs changing case load
+ cor_idr <- 
+  bigfile %>% ungroup() %>%
+  group_by(location_name) %>%
+  mutate(
+    casediff_7d = (daily_cases-lag(daily_cases, n=7))/lag(daily_cases, n=7),
+    casediff_7d_sm = (daily_cases_15dc-lag(daily_cases_15dc, n=7))/lag(daily_cases_15dc, n=7),
+    casediff_15d = (daily_cases-lag(daily_cases, n=15))/lag(daily_cases, n=15),
+    casediff_15d_sm = (daily_cases_15dc-lag(daily_cases_15dc, n=15))/lag(daily_cases_15dc, n=15)
+    ) %>%
+  
+  group_by(location_name, subvariant) %>%
+  filter(!is.na(subvariant)) %>%
+  summarize(
+    cor_idr_cases_daily = cor(idr_v5, daily_cases, use = "pairwise.complete.obs"),
+    cor_idr_cases_15dc = cor(idr_v5, daily_cases_15dc, use = "pairwise.complete.obs"),
+    cor_idr_casediff7d = cor(idr_v5, casediff_7d, use = "pairwise.complete.obs"),
+    cor_idr_casediff7dsm = cor(idr_v5, casediff_7d_sm, use = "pairwise.complete.obs"),
+    cor_idr_casediff15d = cor(idr_v5, casediff_15d, use = "pairwise.complete.obs"),
+    cor_idr_casediff15dsm = cor(idr_v5, casediff_15d_sm, use = "pairwise.complete.obs")
+  ) %>% 
+  mutate(subvariant = case_when( subvariant == "BA.1" ~ "BA1",
+                                  subvariant == "BA.2" ~ "BA2",
+                                  subvariant == "BA.4 BA.5" ~ "BA45",
+                                 .default = subvariant)
+         ) %>%
+
+  pivot_wider(names_from = "subvariant", 
+              values_from =  starts_with("cor")) 
+  
+
+
+write.csv(cor_idr,
+          file = paste0(getwd(), "/../output/" ,"cor_idr_", 
+                        paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE, na = "", row.names = FALSE)
+
+
+```
+
+
+```{r summarize_ihme, echo=}
+
+ bigmodels <- 
+  bigfile %>% ungroup() %>%
+  group_by(region) %>%
+  mutate(
+    casediff_7d = (daily_cases-lag(daily_cases, n=7))/lag(daily_cases, n=7),
+    
+    casediff_7d_sm = (daily_cases_15dc-lag(daily_cases_15dc, n=7))/lag(daily_cases_15dc, n=7),
+    casediff_15d = (daily_cases-lag(daily_cases, n=15))/lag(daily_cases, n=15),
+    casediff_15d_sm = (daily_cases_15dc-lag(daily_cases_15dc, n=15))/lag(daily_cases_15dc, n=15)
+    ) %>%
+  filter(subvariant == "BA.4 BA.5") %>% 
+  select(date, location_name, region, continent, idr_v5, daily_cases, 
+         daily_cases_mill, casediff_7d) %>%
+  nest() 
+
+region_model <- function(df) {
+  lm(idr_v5 ~ daily_cases_mill, data = df)
+}
+
+models <- map(bigmodels$data, region_model)
+
+x <- lm(idr_v5 ~ daily_cases_mill, 
+        data = bigfile %>% ungroup %>% filter(subvariant == "BA.4 BA.5"))
+x$coefficients
+
+summary(x)$adj.r.squared
+summary(models[[4]])$adj.r.squared
+
+
+for (i in 1:6) {
+  coeff_list[i] <- (models[[i]]$coefficients)
+  }
+
+cbind(coeff_list) %>% View()
+
+
+
+x <- 
+  bigmodels %>% ungroup() %>% nest_by(location_name, subvariant) %>% 
+  #mutate(model = list(idr_v5 ~ daily_cases, data=data  ))
+  mutate(model = list(idr_v5 ~ daily_cases, data = data)) %>% 
+  as.data.frame() %>% View()
+```
+```{r summarize_ihme, echo=TRUE}
+
+df_europe <- 
+bigfile %>% 
+  ungroup() %>% filter(continent == "Europe", !is.na(subvariant)) %>% 
+  select(daily_cases_mill, idr_v5, subvariant, location_name)
+
+
+ggplot(data=df_europe, aes(x= daily_cases_mill, y=idr_v5)) + 
+  geom_point(aes(color = as.factor(subvariant))) +
+  facet_wrap(~location_name)
+
+#ggplot(data=df, aes(x= daily_cases, y=idr_v5)) + geom_point(aes(color = as.factor(subvariant)))
+#for every country, omicron era by subvariant
+#add title 
+
+```

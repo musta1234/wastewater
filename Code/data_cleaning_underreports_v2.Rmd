@@ -1,0 +1,336 @@
+---
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# April 2023: Undercounting COVID Cases
+# clear R's brain
+rm( list = ls())
+# load libraries
+preq = c( "dplyr", "ggplot2", "ggfortify", "readxl", "readr", 
+          "stats", "tidyverse", "haven", "Matrix", "foreign", "zoo")
+#for (y in preq) install.packages(y, dep = TRUE)
+sapply(preq, library, character.only=T)
+
+# Set the directory where the files are located
+setwd("C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting")
+file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+
+#source("myfunctions.R")
+```
+
+##Import IHME Data
+```{r IHME_import, echo=TRUE}
+setwd("C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting")
+rm( list = ls())
+# Create a list of the file names
+file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+
+files <- list.files(path = paste0(file_loc, "/Data/") ,  pattern = ".csv")
+files <- list.files(path = "./Data/",  pattern = ".csv")
+# Use grep() function to select strings starting with "myfile"
+selected <- files[grep("^data_download", files)]
+selected <- week <- paste( "./Data/", selected, sep="")
+# View the selected strings
+selected
+# Read in the files and store in a list
+data_list <- lapply(selected, read.csv)
+#View(data_list[[1]])
+#lapply(data_list, colnames)
+#check if all columns are identical
+all(colnames(data_list[[1]]) == colnames(data_list[[2]])) ==
+  all(colnames(data_list[[1]]) == colnames(data_list[[3]]))
+# Bind the data frames into a single data frame
+data_stack <- do.call(rbind, data_list)
+#View(data_stack)
+#regions <- #load a curated list of countries by location
+  (read.xlsx("location_list.xlsx", sheet = "Regions"))
+
+```
+
+##Calculate underreporting as a percentage
+```{r under_report, echo=TRUE}
+#calculate under_reports by country and drop missing values
+data_under <- 
+  data_stack %>%
+# Create a column for the 7 day moving average cases/inf by location using zoo::rollapplyr
+  group_by(location_name) %>%
+  mutate(
+    #inf_mean_7d = rollapplyr(inf_mean, 7, mean, fill = NA, align = "right"),
+    daily_cases_7d = rollapplyr(daily_cases, 7, mean, fill = NA, align = "right")
+    ) %>%
+  select(location_name, date, inf_mean, daily_cases, daily_cases_7d) %>%
+ #drop weeks with 0 predicted cases, mostly from March and April 2020 in some islands
+  #filter(inf_mean_7d != 0 & !is.na(inf_mean_7d) ) %>% 
+  ungroup() %>%
+# Calculate case ascertainment as reported cases (7day avg / inf_mean) after discussion with Hannah
+  # denominator is not average
+  mutate(case_ascetainment = daily_cases_7d/inf_mean) %>% 
+# convert date column to year-quarter format
+  mutate(year_quarter= paste0(year(date), "Q", quarter(date)))
+  #hist(., freq=TRUE, breaks = 1000)
+
+#Add region designation
+data_regions <- data_under
+#data_regions <- 
+#  left_join(data_under, regions, by="location_name") %>% 
+  #keep only countries in the 'regions' dataset
+#  filter(!is.na(region)) 
+
+```
+
+```{r summarize_ihme, echo=TRUE}
+stats_country_ranks <- 
+  data_regions %>% group_by(location_name) %>%
+  summarize(
+        na_daily_cases = sum(is.na(daily_cases)),
+        zero_daily_cases = sum(daily_cases==0, na.rm = TRUE)
+        ) %>% 
+  mutate(nazero_daily_cases = na_daily_cases - 110 + zero_daily_cases) %>%
+  #arrange by descending missingness score, nazero_daily_cases
+  arrange(desc(nazero_daily_cases)) %>%
+  mutate(completeness_rank = rank(nazero_daily_cases, ties.method = "random"))
+
+#generate summary stats by one or two grouping variables
+summarize_ihme_backup <- function(ihme_data, var1, var2 = ""){
+  ihme_data %>%
+    filter(!is.na(daily_cases_7d)) %>% 
+    group_by({{var1}}, {{var2}}) %>% 
+    summarize(
+      n = sum(!is.na(case_ascetainment)),
+      min_date = min(as.Date(date), na.rm = TRUE),
+      max_date = max(as.Date(date), na.rm = TRUE),
+      mean = mean(case_ascetainment, na.rm = TRUE),
+      max = max(case_ascetainment, na.rm = TRUE),
+      min = min(case_ascetainment, na.rm = TRUE),
+      median = median(case_ascetainment, na.rm = TRUE),
+      upper_quartile = quantile(case_ascetainment, 0.75,na.rm = TRUE),
+      lower_quartile = quantile(case_ascetainment, 0.25, na.rm = TRUE)
+  )
+}
+
+summarize_ihme <- function(ihme_data, var1, var2 = ""){
+  ihme_data %>%
+    #filter(!is.na(daily_cases_7d)) %>% 
+    group_by({{var1}}, {{var2}}) %>% 
+    summarize(
+      n_ascert = sum(!is.na(case_ascetainment)),
+      n_daily_cases = sum(!is.na(daily_cases)),
+      NAs = sum(is.na(daily_cases)),
+      n_zeros = sum(!is.na(daily_cases) & (daily_cases == 0)),
+      n_1to9 = sum(!is.na(daily_cases) & (daily_cases <10) & (daily_cases >0)),
+      min_date = min(as.Date(date), na.rm = TRUE),
+      max_date = max(as.Date(date), na.rm = TRUE),
+      mean = mean(case_ascetainment, na.rm = TRUE),
+      max = max(case_ascetainment, na.rm = TRUE),
+      min = min(case_ascetainment, na.rm = TRUE),
+      median = median(case_ascetainment, na.rm = TRUE),
+      upper_quartile = quantile(case_ascetainment, 0.75,na.rm = TRUE),
+      lower_quartile = quantile(case_ascetainment, 0.25, na.rm = TRUE)
+  )
+}
+
+# calculate summary stats for region and country and by quarter
+stats_region <- summarize_ihme(data_regions, region)
+stats_loc <- summarize_ihme(data_regions, location_name)
+stats_loc_qtr <- summarize_ihme(data_regions, location_name, year_quarter)
+stats_region_qtr <- summarize_ihme(data_regions, region, year_quarter)
+
+#export summary stats
+for (name in c("stats_region", "stats_loc", "stats_loc_qtr", "stats_region_qtr", "stats_country_ranks")){
+  df <- get(name)
+  write.xlsx(df, file = paste0(name, ".xlsx"), rowNames = FALSE, colNames = TRUE)
+}
+
+```
+
+##Export country level and regional data for excel
+```{r under_report, echo=TRUE}
+#save big file
+write.csv(data_regions, 
+             file = paste0("./output/" ,"bigfile", ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE,
+             col.names = TRUE)
+
+#save big file
+write.xlsx(data_regions, 
+             file = paste0("./output/" ,"bigfile", ".xlsx"),
+             colNames = TRUE,
+             rowNames = FALSE)
+
+places <- sort(as.vector(data_regions$location_name)) %>% unique()
+# write excel files for each country
+for (place in places){
+  data_regions %>% 
+  filter(location_name == place) %>% 
+  write.xlsx(., 
+             file = paste0("./output/" ,place, ".xlsx"),
+             colNames = TRUE,
+             rowNames = FALSE)
+}
+
+# write excel files for each continent
+##Need to summarize by day first
+for (continent in 
+     unique(as.vector(data_regions$region))){
+  data_regions %>% 
+  filter(region == continent) %>% 
+  write.xlsx(., 
+             file = paste0("./output/" ,continent, ".xlsx"),
+             colNames = TRUE,
+             rowNames = FALSE)
+}
+
+
+```
+## Make line plots and barcharts
+```{r plots, echo=TRUE}
+#1 Create line plots for each country and #2) save as pdfs
+# create plot
+df <- data_regions %>% filter(location_name == "United States of America")
+ggplot(df, 
+       aes(year_quarter, under_report)) + 
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+
+
+  geom_line() +
+  labs(x = "Date", y = "Under reports for USA") +
+  ggtitle("Number of cases over time")
+
+ggplot(df, 
+       aes(x = date, y = under_report)) + 
+  geom_line() +
+  labs(x = "Date", y = "Under reports for USA") +
+  ggtitle("Number of cases over time")
+
+
+```
+
+
+##Older code
+```{r backup, echo=TRUE}
+# View the imported data
+View(country_groups)
+
+# check overlaps
+# need a clean list of countries by region using world bank format
+# a clean list of US states
+#All location names
+location_vec <- data_under[["location_name"]] %>% unique()
+
+#All countries from World Bank
+world <- 
+  country_groups %>% 
+	filter(GroupName == "World") %>%
+	select(CountryName) %>%
+	as.vector() %>%
+  unlist()
+
+# How many countries are correctly spelt? 
+length(location_vec)
+intersect(world, location_vec) %>% length() #145
+
+# A list of poor spellings and countries that do not have a model
+world_mismatch <- 
+  setdiff(world, location_vec) %>% sort() %>% as.data.frame()
+
+location_mismatch <- 
+  setdiff(location_vec, world) %>% sort() %>% as.data.frame()
+
+#remove US states
+location_mismatch2 <- setdiff(location_mismatch[[1]], as.data.frame(state.name)[[1]]) %>% as.data.frame()
+
+
+#####################
+length(state.name)
+
+setdiff(as.data.frame(state.name)[[1]], location_mismatch[[1]])
+
+```
+
+```{r location_clean, echo=TRUE}
+# need to make sure Georgia, USA is not mixed up with Republic of Georgia
+data_under %>% 
+  #filter(grepl('Macao', location_name)) %>% 
+  select(location_name) %>% 
+  #View() %>%
+  #remove everything in parentheses
+  mutate(location_clean = gsub("\\ \\(.*\\)", "", location_name)) %>%
+  mutate(location_clean = gsub("^Macao.*", "Macao", location_clean)) %>%
+  select(location_clean) %>% table() %>% View()
+```
+## Group IHME data by location and calculate summary statistics
+```{r summary_table}
+# 1) for each location summarize Max date, min date, mean, median, max, min, upper and lower quartile
+summary_table <- data_under %>% 
+  filter(!is.na(inf_mean))
+  group_by(location_name) %>%
+  summarize(
+    n = sum(!is.na(inf_mean)),
+    min_date = min(as.Date(date), na.rm = TRUE),
+    max_date = max(as.Date(date), na.rm = TRUE),
+    mean = mean(under_report, na.rm = TRUE),
+    max = max(under_report, na.rm = TRUE),
+    min = min(under_report, na.rm = TRUE),
+    median = median(under_report, na.rm = TRUE),
+    upper_quartile = quantile(under_report, 0.75,na.rm = TRUE),
+    lower_quartile = quantile(under_report, 0.25, na.rm = TRUE)
+  )
+
+# View the resulting summary table
+View(summary_table)
+```
+
+## Calculate breakpoints for time series data
+```{r summary_table}
+#To conduct statistical methods detection of breakpoints in time series data using Chow test, CUSUM test, and Pettitt's test, you can use the strucchange package in R. Here's an example code for each of the three methods:
+
+#Chow test:
+library(strucchange)
+# create a time series object
+ts_data <- ts(your_data, start = start_year, frequency = 12)
+
+# perform Chow test
+chow_test <- breakpoints(ts_data ~ 1)
+summary(chow_test)
+
+#CUSUM test:
+# perform CUSUM test
+cusum_test <- sctest(ts_data ~ 1, type = "CUSUM")
+summary(cusum_test)
+
+#Pettitt's test:
+# perform Pettitt's test
+pettitt_test <- sctest(ts_data ~ 1, type = "Pettitt")
+summary(pettitt_test)
+#Note that in the above code, your_data should be replaced with the name of your time series data, and start_year should be replaced with the start year of your time series. Also, you can adjust the frequency argument depending on the frequency of your time series (12 if it is monthly, 4 if it is quarterly, etc.).
+
+```
+
+## Including Plots
+
+
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:

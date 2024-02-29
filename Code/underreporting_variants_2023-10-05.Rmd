@@ -1,0 +1,117 @@
+---
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-10-05"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# April 2023: Undercounting COVID Cases
+# clear R's brain
+rm( list = ls())
+# load libraries
+preq = c( "dplyr", "ggplot2", "ggfortify", "readxl", "readr", 
+          "stats", "tidyverse", "haven", "Matrix", "foreign", "zoo", "prophet", "haven")
+#for (y in preq) install.packages(y, dep = TRUE)
+sapply(preq, library, character.only=T)
+#install.packages("prophet", dep = T)
+
+# Set the directory where the files are located
+setwd("C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting") #setwd("G:/My\ Drive/Documents/R_github/underreporting/")
+
+file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+```
+
+##Import IHME Data
+```{r IHME_import, echo=TRUE}
+#rm( list = ls())
+file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+
+#big_sas <- read_sas(paste0(file_loc, "/Data/ads.sas7bdat")) #names(bigfile)
+
+#bigfile is "data_regions" dataframe from "data_cleaning_underreports.Rmd"
+bigfile00 <- read.csv(paste0(file_loc, "/output/bigfile.csv")) #names(bigfile)
+
+covariants <- read.csv(paste0(file_loc, "/Data/CoVariants_Scrapped3.csv")) #names(bigfile)
+names(covariants) <- c("location_name", "variant", "startweek", "endweek", "variantdays")
+
+places <- bigfile$location_name %>% sort() %>% unique()
+
+list27 <- read.csv(paste0(file_loc, "./list27.txt"), header = F)[ , 1]
+
+bigfile <- 
+  bigfile00 %>% filter(location_name %in% list27)
+rm(bigfile00, big_sas, bigtest, jointest)
+
+#list26 %in% places
+```
+
+
+##Import IHME Data
+```{r IHME_import, echo=TRUE}
+
+#bigtest <- bigfile %>% select(location_name, inf_mean, daily_cases, date)
+
+covariants <- read.csv(paste0(file_loc, "/Data/CoVariants_Scrapped3.csv")) #names(bigfile)
+names(covariants) <- c("location_name", "variant", "startweek", "endweek", "variantdays")
+covariants_wide <- 
+  covariants %>% select(-variantdays) %>% 
+  mutate(startweek =mdy(startweek), endweek =mdy(endweek)) %>%
+  pivot_wider(names_from = variant, values_from = c(startweek, endweek))
+
+
+jointest <- 
+  
+  left_join(bigtest, covariants_wide, by=c("location_name" = "location_name")) %>% 
+  mutate(date= ymd(date)) %>% 
+  mutate(alpha = ((date - startweek_Alpha) >= 0) & (date - endweek_Alpha) <=0) %>%
+  mutate(beta = ((date - startweek_Beta) >= 0) & (date - endweek_Beta) <=0) %>%
+  mutate(delta = ((date - startweek_Delta) >= 0) & (date - endweek_Delta) <=0) %>%
+  mutate(gamma = ((date - startweek_Gamma) >= 0) & (date - endweek_Gamma) <=0) %>% 
+  mutate(omicron = ((date - startweek_Omicron) >= 0) & (date - endweek_Omicron) <=0) %>% 
+  select(-starts_with("endweek"), -starts_with("startweek")) %>%
+  View()
+
+
+
+
+
+```
+
+
+
+##Import IHME Data
+```{r IHME_import, echo=TRUE}
+
+selected_bigfile <- 
+  bigfile %>% 
+  #filter(location_name %in% list27) %>% 
+  group_by(location_name) %>%
+  mutate(daily_slope = (daily_cases_7d - lag(daily_cases_7d))/daily_cases_7d) %>%
+  mutate(inf_mean_7d = rollapplyr(inf_mean, 7, mean, fill = NA, align = "right")) %>%
+  mutate(inf_mean_7d_f = rollapplyr(inf_mean, 7, mean, fill = NA, align = "left")) %>%
+  mutate(daily_cases_7d_f = rollapplyr(daily_cases, 7, mean, fill = NA, align = "left")) %>%
+  mutate(daily_cases_7d_c = rollapplyr(daily_cases, 7, mean, fill = NA, align = "center")) %>%
+  mutate(inf_mean_7d_c = rollapplyr(inf_mean, 7, mean, fill = NA, align = "center")) %>%
+  mutate(daily_cases_15d = rollapplyr(daily_cases, 15, mean, fill = NA, align = "right")) %>%
+  mutate(daily_cases_15d_c = rollapplyr(daily_cases, 15, mean, fill = NA, align = "center")) %>%
+  mutate(daily_cases_15d_f = rollapplyr(daily_cases, 15, mean, fill = NA, align = "left")) %>%
+  
+  #idr_v7
+  mutate(daily_cases_14d_f = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left")) %>%
+  mutate(inf_mean_14d_f = rollapplyr(inf_mean, 14, mean, fill = NA, align = "left")) %>%
+
+  mutate(idr_v1 = daily_cases_7d/inf_mean) %>%
+  mutate(idr_v2 = daily_cases_7d/inf_mean_7d) %>% 
+  mutate(idr_v3 = daily_cases_7d_c/inf_mean) %>% 
+  mutate(idr_v4 = daily_cases_15d_c/inf_mean) %>% 
+  mutate(idr_v5 = daily_cases_15d/inf_mean) %>%
+  mutate(idr_v6 = daily_cases_7d_f/inf_mean_7d_f) %>%
+  mutate(idr_v7 = daily_cases_14d_f/inf_mean_14d_f) 
+
+selected_bigfile %>% select(date, location_name, idr_v7) %>% filter(idr_v7>1) %>% View()
+  group_by(location_name) %>% count(location_name) %>% View()
+
+  #calculate idr_s with a lag

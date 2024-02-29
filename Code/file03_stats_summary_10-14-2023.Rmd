@@ -1,0 +1,150 @@
+----
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+
+```{r summarize_ihme_fn, echo=TRUE}
+summarize_ihme <- function(ihme_data=bigfile, var1, var2, metric= idr_v5){
+  ihme_data %>%
+    #filter(!is.na(daily_cases_7d)) %>% 
+    group_by({{var1}}, {{var2}}) %>% 
+    filter( !is.na(daily_cases)) %>%
+    summarize(
+      n_obs = sum(!is.na(daily_cases)),
+      NAs = sum(is.na(daily_cases)),
+      n_zeros = sum(!is.na(daily_cases) & (daily_cases == 0)),
+      n_1to9 = sum(!is.na(daily_cases) & (daily_cases <10) & (daily_cases >0)),
+      begin_date = min(as.Date(date), na.rm = TRUE),
+      end_date = max(as.Date(date), na.rm = TRUE),
+
+      p5 = quantile({{metric}}, 0.05, na.rm = TRUE),
+      p10 = quantile({{metric}}, 0.10, na.rm = TRUE),
+      p25 = quantile({{metric}}, 0.25,na.rm = TRUE),
+      p50 = quantile({{metric}}, 0.50, na.rm = TRUE),
+      p75 = quantile({{metric}}, 0.75, na.rm = TRUE),
+      p90 = quantile({{metric}}, 0.90, na.rm = TRUE),
+      p95 = quantile({{metric}}, 0.95, na.rm = TRUE),
+
+      
+      median = median({{metric}}, na.rm = TRUE),
+      mean = mean({{metric}}, na.rm = TRUE),
+      max = max({{metric}}, na.rm = TRUE),
+      min = min({{metric}}, na.rm = TRUE),
+      
+      over_reports = sum({{metric}} >1, na.rm = TRUE),
+      .groups = "keep"
+      ) %>% 
+    mutate(over_reports_pct = over_reports/n_obs)
+      
+}
+```
+
+```{r summarize_ihme, echo=TRUE}
+
+a <- summarize_ihme(var1 = location_name, var2 = "", metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "location_name")
+#country by variant
+b <- summarize_ihme(var1 = location_name, var2 = variant, metric= idr_v5) %>% 
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "location_name/variant")
+#continent all
+c <- summarize_ihme(var1 = continent, var2 = "", metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "continent")
+#continent by variant
+d <- summarize_ihme(var1 = continent, var2 = variant, metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "continent/variant")
+#Region All
+e <- summarize_ihme(var1 = region, var2 = "", metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "region")
+#Region by variant
+f <- summarize_ihme( var1 = region, var2 = variant, metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2)  %>% mutate(summary_by = "region/variant")
+g <- summarize_ihme(var1 = location_name, var2 = subvariant, metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "location_name/subvariant")
+#Region All
+h <- summarize_ihme(var1 = continent, var2 = subvariant, metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "continent/subvariant")
+#Region by variant
+i <- summarize_ihme( var1 = region, var2 = subvariant, metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "region/subvariant")
+
+z1 <- summarize_ihme( var1 = "", var2 = "", metric= idr_v5) %>%
+  rename(var1 = 1) %>% mutate(summary_by = "overall") %>% mutate(var2 = "")
+
+z2 <- summarize_ihme( var1 = variant, var2 = "", metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "variant only")
+
+z3 <- summarize_ihme( var1 = subvariant, var2 ="", metric= idr_v5) %>%
+  rename(var1 = 1, var2 =2) %>% mutate(summary_by = "subvariant only")
+
+summary_stats <- 
+  rbind(a,b,c,d,e,f,g,h,i) %>% rename(location = var1, variant = var2) %>% 
+  mutate(variant = case_when(variant == "" ~ "All", .default = variant)) 
+
+rm(list= c("a","b","c","d","e","f","g","h","i"))
+
+write.csv(summary_stats, 
+             file = paste0(getwd(), "/../output/" ,"summary_stats_", 
+                           paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = TRUE)
+
+write.csv(rbind(z1,z2,z3), 
+             file = paste0(getwd(), "/../output/" ,"summary_stats_z1z2z3", 
+                           paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = TRUE)
+
+
+```
+
+
+############################### Backup ##################################
+############################### Backup ##################################
+
+
+
+
+```{r summarize_ihme_old, echo=TRUE}
+
+#all countries
+a <- summarize_ihme(ihme_data=bigfile, var1 = location_name, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#country by variant
+b <- summarize_ihme(ihme_data=bigfile, var1 = location_name, var2 = variant, metric= idr_v4) %>% 
+  rename(var1 = 1, var2 =2)
+#continent all
+c <- summarize_ihme(ihme_data=bigfile, var1 = continent, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#continent by variant
+d <- summarize_ihme(ihme_data=bigfile, var1 = continent, var2 = variant, metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#Region All
+e <- summarize_ihme(ihme_data=bigfile, var1 = region, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#Region by variant
+f <- summarize_ihme(ihme_data=bigfile, var1 = region, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+
+summary_stats <- 
+  rbind(a,b,c,d,e,f) %>% rename(location = var1, variant = var2) %>% 
+  mutate(variant = case_when(variant == "" ~ "All", .default = variant)) %>% 
+  select(-n_ascert, -NAs)
+
+write.csv(summary_stats, 
+             file = paste0(getwd(), "/../output/" ,"summary_stats_", 
+                           paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE)
+
+```
+```{r summarize_ihme_backup, echo=TRUE}
+stats_loc <- summarize_ihme(data_regions, location_name)
+
+

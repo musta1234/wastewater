@@ -1,0 +1,135 @@
+---
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# April 2023: Undercounting COVID Cases
+# clear R's brain
+rm( list = ls())
+# load libraries
+preq = c( "dplyr", "ggplot2", "ggfortify", "readxl", "readstata13", "readr", 
+          "stats", "tidyverse", "haven", "Matrix", "foreign", "zoo", "openxlsx")
+#for (y in preq) install.packages(y, dep = TRUE)
+sapply(preq, library, character.only=T)
+
+# Set the directory where the files are located
+setwd("G:/My\ Drive/Documents/R_github/underreporting/")
+#source("myfunctions.R")
+```
+
+##Import IHME Data
+```{r IHME_import, echo=TRUE}
+#rm( list = ls())
+# Create a list of the file names
+files <- list.files(path = "../Data/OurWorldInData/",  pattern = ".csv")
+# Use grep() function to select strings starting with "myfile"
+x <- files[grep("ihme", files)]
+selected <- paste( "../Data/OurWorldInData/", x, sep="")
+# View the selected strings
+selected
+# Read in the files and store in a list
+ihme_stack <- read.csv(selected)
+#View(data_stack)
+names(ihme_stack) <- 
+  c("location", "country_code", "Date", "infections_mean", "infections_lower", "infections_upper", "cases_mean_7d")
+ihme_stack["case_ascert"] = ihme_stack["cases_mean_7d"]/ihme_stack["infections_mean"]
+#regions <- #load a curated list of countries by location
+#  (read.xlsx("location_list.xlsx", sheet = "Regions"))
+
+names(ihme_stack) <- paste0("ihme_", names(ihme_stack))
+
+```
+
+##Import Imperial College Data
+```{r IC_import, echo=TRUE}
+#rm( list = ls())
+# Create a list of the file names
+files <- list.files(path = "../Data/ImperialCollege/",  pattern = ".csv")
+# Use grep() function to select strings starting with "myfile"
+x <- files[1]
+selected <- paste( "../Data/ImperialCollege/", x, sep="")
+# View the selected strings
+selected
+# Read in the files and store in a list
+ic_stack <- read.csv(selected)
+View(ic_stack)
+
+ic_long <-
+  ic_stack %>% 
+  select(date, compartment, y_mean, y_025, y_975, fit_type, 
+         death_calibrated, country, iso3c) %>%
+  filter(compartment == "deaths" | compartment == "infections")
+names(ic_long) <- paste0("ic_", names(ic_long))
+
+#convert wide to long format
+ic_wide <- 
+  ic_long %>%
+  pivot_wider(id_cols = c("ic_date", "ic_country", "ic_iso3c"),
+              names_from = c("ic_compartment", "ic_fit_type"),
+              values_from = c("ic_y_mean", "ic_y_025", "ic_y_975")
+              )
+
+```
+
+```{r merge_ic_IHME, echo=TRUE}
+#convert wide to long format
+ihme_ic_fulljoin <- 
+  full_join(x=ihme_stack, y=ic_wide,
+           by = c('ihme_Date' = 'ic_date',
+                  'ihme_country_code' = 'ic_iso3c'
+                  ))
+ihme_ic_innerjoin <- 
+  inner_join(x=ihme_stack, y=ic_wide,
+           by = c('ihme_Date' = 'ic_date',
+                  'ihme_country_code' = 'ic_iso3c'
+                  ))
+
+```
+
+##Export country level and regional data for excel
+```{r under_report, echo=TRUE}
+#save big file
+write.xlsx(ihme_ic_fulljoin, 
+           file = paste0("./output/","ihme_ic_fulljoin", ".xlsx"),
+           colNames = TRUE,
+           rowNames = FALSE)
+write.xlsx(ihme_ic_innerjoin, 
+           file = paste0("./output/","ihme_ic_innerjoin", ".xlsx"),
+           colNames = TRUE,
+           rowNames = FALSE)
+
+places <- sort(as.vector(ihme_ic_innerjoin$ihme_country_code)) %>% unique()
+sort(as.vector(ihme_ic_innerjoin$ihme_country_code)) %>% 
+  table() %>% sort() %>%
+  as.data.frame() %>% View() 
+
+sort(as.vector(ihme_ic_innerjoin$ihme_country_code)) %>% unique()
+# write excel files for each country
+for (place in places){
+  data_regions %>% 
+    filter(location_name == place) %>% 
+    write.xlsx(., 
+               file = paste0("./output/" ,place, ".xlsx"),
+               colNames = TRUE,
+               rowNames = FALSE)
+}
+
+# write excel files for each continent
+##Need to summarize by day first
+for (continent in 
+     unique(as.vector(data_regions$region))){
+  data_regions %>% 
+    filter(region == continent) %>% 
+    write.xlsx(., 
+               file = paste0("./output/" ,continent, ".xlsx"),
+               colNames = TRUE,
+               rowNames = FALSE)
+}
+
+
+```

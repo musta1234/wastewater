@@ -1,0 +1,271 @@
+---
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports underreports data from IHME
+
+##modify IHME Data
+```{r lead_lagger_fn, echo=TRUE}
+lead_lagger <- function(infile=bigfile, infname=inf_mean, casesname=daily_cases_15dc){
+  #function(infile=selected_bigfile, infname=inf_mean, casesname=daily_cases_7d)
+  tempfile<- infile %>% 
+    group_by(location_name) %>% 
+    #filter(location_name) %>% 
+    summarize(cor_l28 = cor({{infname}}, lag({{casesname}}, n = 28), 
+                            use = "pairwise.complete.obs"),
+              cor_l21 = cor({{infname}}, lag({{casesname}}, n = 21), 
+                            use = "pairwise.complete.obs"),
+              cor_l14 = cor({{infname}}, lag({{casesname}}, n = 14), 
+                            use = "pairwise.complete.obs"),
+              cor_l10 = cor({{infname}}, lag({{casesname}}, n = 10), 
+                            use = "pairwise.complete.obs"),
+              cor_l7 = cor({{infname}}, lag({{casesname}}, n = 7), 
+                           use = "pairwise.complete.obs"),
+              cor_l6 = cor({{infname}}, lag({{casesname}}, n = 6), 
+                           use = "pairwise.complete.obs"),
+              cor_l5 = cor({{infname}}, lag({{casesname}}, n = 5), 
+                           use = "pairwise.complete.obs"),
+              cor_l4 = cor({{infname}}, lag({{casesname}}, n = 4), 
+                           use = "pairwise.complete.obs"),
+              cor_l3 = cor({{infname}}, lag({{casesname}}, n = 3), 
+                           use = "pairwise.complete.obs"),
+              cor_l2 = cor({{infname}}, lag({{casesname}}, n = 2), 
+                           use = "pairwise.complete.obs"),
+              cor_l1 = cor({{infname}}, lag({{casesname}}, n = 1), 
+                           use = "pairwise.complete.obs"),
+              cor_00 = cor({{infname}}, {{casesname}}, 
+                           use = "pairwise.complete.obs"),
+              cor_f1 = cor({{infname}}, lead({{casesname}}, n = 1), 
+                           use = "pairwise.complete.obs"),
+              cor_f2 = cor({{infname}}, lead({{casesname}}, n = 2), 
+                           use = "pairwise.complete.obs"),
+              cor_f3 = cor({{infname}}, lead({{casesname}}, n = 3), 
+                           use = "pairwise.complete.obs"),
+              cor_f4 = cor({{infname}}, lead({{casesname}}, n = 4), 
+                           use = "pairwise.complete.obs"),
+              cor_f5 = cor({{infname}}, lead({{casesname}}, n = 5), 
+                           use = "pairwise.complete.obs"),
+              cor_f6 = cor({{infname}}, lead({{casesname}}, n = 6), 
+                           use = "pairwise.complete.obs"),
+              cor_f7 = cor({{infname}}, lead({{casesname}}, n = 7), 
+                           use = "pairwise.complete.obs"),
+              cor_f8 = cor({{infname}}, lead({{casesname}}, n = 8), 
+                           use = "pairwise.complete.obs"),
+              cor_f9 = cor({{infname}}, lead({{casesname}}, n = 9), 
+                           use = "pairwise.complete.obs"),
+              cor_f10 = cor({{infname}}, lead({{casesname}}, n = 10), 
+                            use = "pairwise.complete.obs"),
+              cor_f11 = cor({{infname}}, lead({{casesname}}, n = 11), 
+                            use = "pairwise.complete.obs"),
+              cor_f12 = cor({{infname}}, lead({{casesname}}, n = 12), 
+                            use = "pairwise.complete.obs"),
+              cor_f13 = cor({{infname}}, lead({{casesname}}, n = 13), 
+                            use = "pairwise.complete.obs"),
+              cor_f14 = cor({{infname}}, lead({{casesname}}, n = 14), 
+                            use = "pairwise.complete.obs"),
+              cor_f15 = cor({{infname}}, lead({{casesname}}, n = 15), 
+                            use = "pairwise.complete.obs"),
+              cor_f16 = cor({{infname}}, lead({{casesname}}, n = 16), 
+                            use = "pairwise.complete.obs"),
+              cor_f17 = cor({{infname}}, lead({{casesname}}, n = 17), 
+                            use = "pairwise.complete.obs"),
+              cor_f18 = cor({{infname}}, lead({{casesname}}, n = 18), 
+                            use = "pairwise.complete.obs"),
+              cor_f19 = cor({{infname}}, lead({{casesname}}, n = 19), 
+                            use = "pairwise.complete.obs"),
+              cor_f20 = cor({{infname}}, lead({{casesname}}, n = 20), 
+                            use = "pairwise.complete.obs"),
+              cor_f21 = cor({{infname}}, lead({{casesname}}, n = 21), 
+                            use = "pairwise.complete.obs"),
+              cor_f28 = cor({{infname}}, lead({{casesname}}, n = 28), 
+                            use = "pairwise.complete.obs"),
+              )           # %>% View()
+  return(tempfile)
+  }
+
+```
+
+```{r variants_lead_lagger, echo=TRUE}
+#Plot 7c and 15c for each country (correlation plot)
+
+df = data.frame(matrix(nrow = 34, ncol = length(list27)))
+
+for (i in 1:length(list27)){
+  t <- 
+    lead_lagger(infile=bigfile %>% filter(location_name == list27[i]), 
+            infname=inf_mean, casesname=daily_cases_15dc) %>% 
+    select(-location_name) %>%
+    apply(., 2, median, na.rm = TRUE)
+  df[ ,i]<- t
+  names(df)[i] <- list27[i]
+}
+
+leadlag_15dc_list27 <- 
+  names(t) %>% gsub("cor_f", "", .) %>% 
+  gsub("cor_l", "-", .) %>% gsub("cor_", "", .) %>% 
+  as.numeric() %>% cbind(., df) %>% rename(lead_lag = 1) #%>% View()
+
+# find the max correlation date for each country
+
+max_15dc_leadlag <- 
+  cbind( names(df),
+       leadlag_15dc_list27$lead_lag[sapply(df, which.max)]
+               ) %>%
+  as.data.frame() %>% 
+  rename(country = 1, max_15dc_leadlag = 2)
+
+#leadlag_15dc_list27$lead_lag[sapply(df, which.max)] %>% hist()
+
+write.csv(leadlag_15dc_list27, 
+             file = paste0(getwd(), "/../output/" ,"leadlag_15dc_list27", ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE)
+
+write.csv(max_15dc_leadlag, 
+             file = paste0(getwd(), "/../output/" ,"max_15dc_leadlag", ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE)
+
+
+```
+
+```{r variants_lead_lagger_old, echo=TRUE}
+
+z <-
+  lead_lagger(infile=bigfile, 
+              infname=inf_mean, casesname=daily_cases_15dc) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+a <- 
+  lead_lagger(infile=selected_bigfile %>% filter(alpha == 1), 
+              infname=inf_mean, casesname=daily_cases_15d_c) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+b <- 
+  lead_lagger(infile=selected_bigfile %>% filter(beta == 1), 
+              infname=inf_mean, casesname=daily_cases_15d_c) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+d <- 
+  lead_lagger(infile=selected_bigfile %>% filter(delta == 1), 
+              infname=inf_mean, casesname=daily_cases_15d_c) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+g <- 
+  lead_lagger(infile=selected_bigfile %>% filter(gamma == 1), 
+              infname=inf_mean, casesname=daily_cases_15d_c) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+o <- 
+  lead_lagger(infile=selected_bigfile %>% filter(omicron == 1), 
+              infname=inf_mean, casesname=daily_cases_15d_c) %>% 
+  select(-location_name) %>%
+  apply(., 2, median, na.rm = TRUE)
+
+x <-
+  data.frame(z, a, b, d, g, o)
+
+x$leadlag_days <- 
+  row.names(x) %>% gsub("cor_l", "-", .) %>% 
+  gsub("cor_f|cor_", "", ., perl = T) %>% as.numeric()
+
+row.names(x) <- NULL
+names(x) <- c("All", "Alpha", "Beta", "Delta", "Gamma", "Omicron", "Days")
+
+variant_median <- x %>% relocate(Days)
+
+write.csv(variant_median, 
+             file = paste0(getwd(), "/../output/" ,"variant_median", ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE)
+
+# On which day do we have peak correlation for each variant?
+#x$Days[which.max(x$Omicron)]
+rm( list = c("a","b","d","g","o","z","x"))
+
+
+```
+
+
+  #create a continent variable from 27 
+#2x3 Panel plot - case detection rate. Continent specific plot with a line per country.
+# ggplot or Stata
+  
+#%>% View()
+
+#table( bigtest %>% select(alpha, beta, gamma, delta, omicron, variant) , useNA = "always") %>% View()
+
+```{r summarize_ihme_fn, echo=TRUE}
+summarize_ihme <- function(ihme_data, var1, var2 = "", metric= case_detection_7d){
+  ihme_data %>%
+    #filter(!is.na(daily_cases_7d)) %>% 
+    group_by({{var1}}, {{var2}}) %>% 
+    filter( !is.na(daily_cases)) %>%
+    summarize(
+      n_ascert = sum(!is.na(daily_cases)),
+      n_daily_cases = sum(!is.na(daily_cases)),
+      NAs = sum(is.na(daily_cases)),
+      n_zeros = sum(!is.na(daily_cases) & (daily_cases == 0)),
+      n_1to9 = sum(!is.na(daily_cases) & (daily_cases <10) & (daily_cases >0)),
+      min_date = min(as.Date(date), na.rm = TRUE),
+      max_date = max(as.Date(date), na.rm = TRUE),
+      mean = mean({{metric}}, na.rm = TRUE),
+      max = max({{metric}}, na.rm = TRUE),
+      min = min({{metric}}, na.rm = TRUE),
+      median = median({{metric}}, na.rm = TRUE),
+      upper_quartile = quantile({{metric}}, 0.75,na.rm = TRUE),
+      lower_quartile = quantile({{metric}}, 0.25, na.rm = TRUE),
+      q5 = quantile({{metric}}, 0.05, na.rm = TRUE),
+      q95 = quantile({{metric}}, 0.95, na.rm = TRUE),
+
+      over_reports = sum(!is.na(case_detection_7d) & (case_detection_7d >1 ))
+  )
+}
+```
+
+```{r summarize_ihme, echo=TRUE}
+
+#all countries
+a <- summarize_ihme(ihme_data=bigfile, var1 = location_name, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#country by variant
+b <- summarize_ihme(ihme_data=bigfile, var1 = location_name, var2 = variant, metric= idr_v4) %>% 
+  rename(var1 = 1, var2 =2)
+#continent all
+c <- summarize_ihme(ihme_data=bigfile, var1 = continent, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#continent by variant
+d <- summarize_ihme(ihme_data=bigfile, var1 = continent, var2 = variant, metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#Region All
+e <- summarize_ihme(ihme_data=bigfile, var1 = region, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+#Region by variant
+f <- summarize_ihme(ihme_data=bigfile, var1 = region, var2 = "", metric= idr_v4) %>%
+  rename(var1 = 1, var2 =2)
+
+summary_stats <- 
+  rbind(a,b,c,d,e,f) %>% rename(location = var1, variant = var2) %>% 
+  mutate(variant = case_when(variant == "" ~ "All", .default = variant)) %>% 
+  select(-n_ascert, -NAs)
+
+write.csv(summary_stats, 
+             file = paste0(getwd(), "/../output/" ,"summary_stats_", 
+                           paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+             quote = TRUE,
+             na = "",
+             row.names = FALSE)
+
+```
+```{r summarize_ihme_backup, echo=TRUE}
+stats_loc <- summarize_ihme(data_regions, location_name)
+
+
+
+############################### Backup ##################################
+############################### Backup ##################################
