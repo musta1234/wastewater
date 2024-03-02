@@ -15,23 +15,27 @@ rm( list = ls())
 # load libraries
 preq = c( "dplyr", "ggplot2", "ggpmisc", "gridExtra", "ggfortify", "scales", 
           "readxl", "readr", "stats", "tidyverse", "haven", "Matrix", "foreign",
-          "zoo", "prophet", "corrr", "purrr", "broom")
+          "zoo", "prophet", "corrr", "purrr", "broom", "usethis")
 #for (y in preq) install.packages(y, dep = TRUE)
-#install.packages("ggplot2", dep = TRUE)
 sapply(preq, library, character.only=T)
-#install.packages("prophet", dep = T)
 
 # Set the directory where the files are located
-setwd("C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting") #setwd("G:/My\ Drive/Documents/R_github/underreporting/")
-
-file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+#setwd("C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting")ments/R_github/underreporting/")
 ```
+
+```{r global_variables, echo=TRUE}
+
+#rm( list = ls())
+file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/wastewater/"
+data_loc <- paste0(file_loc, "../Data/") # a location for data files 
+```
+
 
 ##Import IHME Data
 ```{r IHME_import, echo=TRUE}
-rm( list = ls())
-file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
-list27 <- read.csv(paste0(file_loc, "./list27.txt"), header = F)[ , 1]
+#rm( list = ls())
+#file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
+list27 <- read.csv(paste0(data_loc, "./list27.txt"), header = F)[ , 1]
 
 #bigfile is "data_regions" dataframe from "data_cleaning_underreports.Rmd"
 bigfile00 <- 
@@ -39,7 +43,7 @@ bigfile00 <-
   #filter(location_name %in% list27, !is.na(daily_cases)) %>% 
   #mutate(date = ymd(date))
 #ihme_102023 <- 
-  read.csv(paste0(file_loc, "/Data/Covid-19 Explorer 2023-10-30.csv")) %>% 
+  read.csv(paste0(data_loc, "/Covid-19 Explorer 2023-10-30.csv")) %>% 
   select(Location, Day, Measure, Value) %>% 
   mutate(location_name = Location, date = mdy(Day),
          source_var = case_when(Measure == "Infections - Estimated" ~ "inf_mean",
@@ -60,7 +64,7 @@ bigfile00 <-
 
 ```{r read_populations, echo=TRUE}
 pop <- 
-  read_excel(paste0(file_loc, "/Data/", "world_pop_20231025_worldometer.xlsx")) %>% 
+  read_excel(paste0(data_loc, "world_pop_20231025_worldometer.xlsx")) %>% 
   filter(location_name %in% list27)
 
 #left_join(
@@ -73,7 +77,7 @@ pop <-
 
 ```{r read_covariants, echo=TRUE}
 covariants <- 
-  read.csv(paste0(file_loc, "/Data/CoVariants_Scrapped8.csv")) %>% 
+  read.csv(paste0(data_loc, "/CoVariants_Scrapped8.csv")) %>% 
   #select(-1) %>% View()
   mutate(across(2:length(.), mdy))
 ```
@@ -124,20 +128,20 @@ bigfile <-
   # selected_bigfile  bigfile %>% #filter(location_name %in% list27) %>% 
   group_by(location_name) %>%
   mutate(daily_cases_7dt = rollapplyr(daily_cases, 7, mean, fill = NA, align = "right"),
-         daily_cases_7df = rollapplyr(daily_cases, 7, mean, fill = NA, align = "left"),
-         daily_cases_7dc = rollapplyr(daily_cases, 7, mean, fill = NA, align = "center"),
-         daily_cases_15dt = rollapplyr(daily_cases, 15, mean, fill = NA, align = "right"),
+         #daily_cases_7df = rollapplyr(daily_cases, 7, mean, fill = NA, align = "left"),
+         #daily_cases_7dc = rollapplyr(daily_cases, 7, mean, fill = NA, align = "center"),
+         #daily_cases_15dt = rollapplyr(daily_cases, 15, mean, fill = NA, align = "right"),
          daily_cases_15dc = rollapplyr(daily_cases, 15, mean, fill = NA, align = "center"),
-         daily_cases_15df = rollapplyr(daily_cases, 15, mean, fill = NA, align = "left"),
-         daily_cases_14dc = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
-         daily_cases_14df = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
-         daily_cases_29dc = rollapplyr(daily_cases, 29, mean, fill = NA, align = "center"),
-         daily_cases_29df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
-         daily_cases_30df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
+         #daily_cases_15df = rollapplyr(daily_cases, 15, mean, fill = NA, align = "left"),
+         #daily_cases_14dc = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
+         #daily_cases_14df = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
+         #daily_cases_29dc = rollapplyr(daily_cases, 29, mean, fill = NA, align = "center"),
+         #daily_cases_29df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
+         #daily_cases_30df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
 
-         daily_slope = (daily_cases_7dt - lag(daily_cases_7dt))/daily_cases_7dt,
+         #daily_slope = (daily_cases_7dt - lag(daily_cases_7dt))/daily_cases_7dt,
 
-                  inf_mean_7dc = rollapplyr(inf_mean, 7, mean, fill = NA, align = "center"),
+         #inf_mean_7dc = rollapplyr(inf_mean, 7, mean, fill = NA, align = "center"),
          #inf_mean_15d_f = rollapplyr(inf_mean, 15, mean, fill = NA, align = "left"),
          #inf_mean_14d_f = rollapplyr(inf_mean, 14, mean, fill = NA, align = "left")
   ) %>%
