@@ -1,0 +1,188 @@
+---
+title: "wws02_regressionsUSA"
+output: html_document
+---
+######## To do
+# vars: nwss, ihme_wkly, cases_15dc_wkly, cases_mill_wkly, idr_wkly, covidnet_hosp, cdc_death
+# regression models (unadjusted)
+# Charts of all pairs of variables 
+# lead-lag correlation analysis (nwss, ihme, cases)
+# regression models (adjusted, doubles)
+#######params#########
+```{r params_definition, echo=TRUE}
+params <- c("nwss", "ihme_wkly", "cases_mill_wkly", "idr_wkly", "cdc_hosp", "cdc_death")
+```
+```{r usa_nws_correlate, echo=TRUE}
+#library(corrr)
+#library(purrr)
+#library(broom)
+#names1 <- names(big_nwss)[c(3:7, 13:21, 23)]
+corr_usa <- 
+  big_nwss %>% ungroup() %>%
+  #select(c(3:7, 13:21, 23)) %>% #View()
+  #nest() %>%
+  correlate()
+
+#write.csv(corr_usa,
+          #file = paste0(getwd(), "/../output/" ,"corr_usa_",
+                        #paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"), 
+          #quote = TRUE, na = "", row.names = FALSE)
+
+```
+
+#############fxns create_models_1[2]param save_csv###################################
+
+```{r create_models_params, echo=TRUE}
+
+create_models_1param <- function(data, predictors) {
+  model_list <- list()
+  counter <- 1
+  for (i in 1:length(predictors)) {
+    for (j in 1:length(predictors)) {
+      if (i != j) {
+        formula_str <- paste(predictors[i], "~", predictors[j])
+        model_list[[counter]] <- lm(formula_str, data = data, na.action = na.omit)
+        counter <- counter + 1
+      }
+    }
+  }
+  return(model_list)
+}
+# Create models with one predictors
+#model_list_one_predictors <- create_models_1param(big_nwss, params)
+
+create_models_2param <- function(data, predictors, additional_predictors = NULL) {
+  model_list = list()
+  counter = 1
+  
+  if (is.null(additional_predictors)) {
+    additional_predictors = character(0)
+  }
+  
+  # Handle the case with only one predictor
+  if (length(predictors) == 1) {
+    model_list[[counter]] = lm(formula(paste(predictors[1], "~ 1")), data = data, na.action = na.omit)
+    return(model_list)
+  }
+  
+  for (i in 1:length(predictors)) {
+    for (j in 1:length(predictors)) {
+      for (k in additional_predictors) {
+        if (i != j && i != k && j != k) {
+          formula_str <- paste(predictors[i], "~", paste(c(predictors[j], k), collapse = " + "))
+          model_list[[counter]] = lm(formula_str, data = data, na.action = na.omit)
+          counter <- counter + 1
+        }
+      }
+    }
+  }
+  
+  return(model_list)
+}
+
+# Create models with two predictors
+#model_list_two_predictors <- create_models_2param(big_nwss, params, additional_predictors = params)
+```
+############################ save_csv
+```{r save_csv, echo=TRUE}
+
+save_csv <- function(data_to_save, file_prefix) {
+  timestamp <- format(Sys.time(), "%Y-%m-%d-%I%p")
+  file_path <- file.path("C:/Users/mustam23/OneDrive - Pfizer/Documents/Projects/underreporting/", 
+                         "output", paste0(file_prefix, "_", timestamp, ".csv"))
+  
+  write.csv(as.data.frame(data_to_save),
+            file = file_path,
+            quote = TRUE,
+            na = "",
+            row.names = FALSE)
+}
+
+```
+
+################################################
+
+```{r analyze_models, echo=TRUE}
+
+analyze_models <- function(model_list) {
+  model_y <- character(length = length(model_list))
+  model_x <- character(length = length(model_list))
+  intercept <- numeric(length = length(model_list))
+  slope_1 <- numeric(length = length(model_list))
+  slope_2 <- numeric(length = length(model_list))
+  p_values_intc <- numeric(length = length(model_list))
+  p_values_x1 <- numeric(length = length(model_list))
+  p_values_x2 <- numeric(length = length(model_list))
+  rsquared <- numeric(length = length(model_list))
+
+  for (i in 1:length(model_list)) {
+    model_y[i] <- as.character(model_list[[i]]$terms[[2]])
+    model_x[i] <- paste(names(model_list[[i]]$coefficients)[-1], collapse = ', ')
+    model_x[i] <- as.character(paste(model_list[[i]]$terms[[3]], collapse = ','))
+    intercept[i] <- model_list[[i]]$coefficients[1]
+    slope_1[i] <- model_list[[i]]$coefficients[2]
+    slope_2[i] <- model_list[[i]]$coefficients[3]
+    p_values_intc[i] <- summary(model_list[[i]])$coefficients[, "Pr(>|t|)"][1]  # Adjust index accordingly
+    p_values_x1[i] <- summary(model_list[[i]])$coefficients[, "Pr(>|t|)"][2]  # Adjust index accordingly
+    p_values_x2[i] <- summary(model_list[[i]])$coefficients[, "Pr(>|t|)"][3]  # Adjust index accordingly
+    rsquared[i] <- summary(model_list[[i]])$r.squared
+  }
+
+  model_output <- data.frame(model_y, model_x, intercept, 
+                             slope_1, slope_2, 
+                             p_values_intc, p_values_x1, p_values_x2,
+                             rsquared)
+  return(model_output)
+}
+
+```
+
+################################################
+
+```{r run_save_models_predictors, echo=TRUE}
+model_list_one_predictors <- create_models_1param(big_nwss, params)
+model_list_two_predictors <- create_models_2param(big_nwss, params, additional_predictors = params)
+
+# Example usage:
+result_2predictors <- 
+  analyze_models(model_list_two_predictors) %>% 
+  separate_wider_delim(model_x, delim = ",", 
+                       names = c("plus", "model_x1", "model_x2")) %>% 
+  select(-plus) %>% filter(!is.na(slope_2))
+
+View(result_2predictors)
+
+result_1predictors <- 
+  analyze_models(model_list_one_predictors) %>% rename(model_x1 = model_x)
+
+View(result_1predictors)
+
+save_csv(result_1predictors, "result_1predictors")
+save_csv(result_2predictors, "result_2predictors")
+
+
+```
+
+```{r test, echo=TRUE}
+
+
+#model_list_one_predictors <- 
+#  create_models_1param(big_nwss %>% filter(date >= as.Date("2022-01-01")), 
+#                       params)
+#result_1predictors <- 
+#  analyze_models(model_list_one_predictors) %>% rename(model_x1 = model_x)
+
+#save_csv(result_1predictors, "result_1predictors")
+
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+#plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
