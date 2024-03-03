@@ -28,182 +28,122 @@ sapply(preq, library, character.only=T)
 #rm( list = ls())
 file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/wastewater/"
 data_loc <- paste0(file_loc, "../Data/") # a location for data files 
+# check if the string contains "mustam23"
+work_laptop <- grepl("mustam23", getwd())
 ```
 
 
 ##Import IHME Data
-```{r IHME_import, echo=TRUE}
-#rm( list = ls())
-#file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/underreporting"
-list27 <- read.csv(paste0(data_loc, "./list27.txt"), header = F)[ , 1]
+```{r IHME_import_function, echo=TRUE}
 
-#bigfile is "data_regions" dataframe from "data_cleaning_underreports.Rmd"
-bigfile00 <- 
-  #read.csv(paste0(file_loc, "/output/bigfile.csv")) %>% 
-  #filter(location_name %in% list27, !is.na(daily_cases)) %>% 
-  #mutate(date = ymd(date))
-#ihme_102023 <- 
-  read.csv(paste0(data_loc, "/Covid-19 Explorer 2023-10-30.csv")) %>% 
-  select(Location, Day, Measure, Value) %>% 
-  mutate(location_name = Location, date = mdy(Day),
+create_bigfile_from_IHME <- function(){
+  
+  pop <- 
+    read_excel(paste0(data_loc, "world_pop_20231025_worldometer.xlsx")) %>%
+    filter(location_name %in% list27)
+  
+  covariants <- 
+    read.csv(paste0(data_loc, "/CoVariants_Scrapped8.csv")) %>% 
+    mutate(across(2:length(.), mdy))
+  
+  list27 <- read.csv(paste0(data_loc, "./list27.txt"), header = F)[ , 1]
+  
+  bigfile00 <- 
+    read.csv(paste0(data_loc, "/Covid-19 Explorer 2023-10-30.csv")) %>%
+    select(Location, Day, Measure, Value) %>% 
+    mutate(location_name = Location, date = mdy(Day),
          source_var = case_when(Measure == "Infections - Estimated" ~ "inf_mean",
                                 Measure == "Infections - Confirmed" ~ "daily_cases",
                                 .default = "'Measure' is NA"),
-  #       across('location_name', str_replace, 'United States', 'United States of America')) %>%
-          across('location_name',
-                 \(x) str_replace(x, 'United States','United States of America')
+         across('location_name', 
+                \(x) str_replace(x, 'United States','United States of America')
                  )
-  ) %>%
-  
-  select(-Location, -Day, -Measure) %>% 
-  pivot_wider(names_from = source_var, values_from = Value) %>%
+         ) %>%
+    select(-Location, -Day, -Measure) %>%
+    pivot_wider(names_from = source_var, values_from = Value) %>%
     filter(location_name %in% list27, !is.na(daily_cases)) 
   
-#list27 %in% places
-```
-
-```{r read_populations, echo=TRUE}
-pop <- 
-  read_excel(paste0(data_loc, "world_pop_20231025_worldometer.xlsx")) %>% 
-  filter(location_name %in% list27)
-
-#left_join(
-#    bigfile00%>% select(location_name, date, inf_mean, daily_cases),
-#    pop, by=c("location_name" = "location_name")) %>% View()
-
-#mean(list27 %in% pop$location_name) == 1 #test if all countries are present
-
-```
-
-```{r read_covariants, echo=TRUE}
-covariants <- 
-  read.csv(paste0(data_loc, "/CoVariants_Scrapped8.csv")) %>% 
-  #select(-1) %>% View()
-  mutate(across(2:length(.), mdy))
-```
-
-```{r merge_variants, echo=TRUE}
-#Adding covariants to bigfile
-bigfile <- 
-  
-  left_join(
-    bigfile00%>% select(location_name, date, inf_mean, daily_cases),
-    covariants, by=c("location_name" = "location_name")) %>% 
-  
-  left_join(., pop, by=c("location_name" = "location_name")) %>% 
-
-  mutate(
-    nonvoc = case_when(
-      ((date >= start_NonVOC) & (date < end_NonVOC))  ~ 1, .default = 0),
-    #wildtype = case_when(
-    #  ((date >= start_wildtype) & (date < end_wildtype))  ~ 1, .default = 0),
-    alpha = case_when(
-      ((date >= start_Alpha) & (date < end_Alpha)) ~ 1, .default = 0),
-    beta = case_when(
-      ((date >= start_Beta) & (date < end_Beta)) ~ 1, .default = 0),
-    delta = case_when(
-      ((date >= start_Delta) & (date < end_Delta)) ~ 1, .default = 0),
-    gamma = case_when(
-      ((date >= start_Gamma) & (date < end_Gamma)) ~ 1, .default = 0),
-    omicron = case_when(
-      ((date >= start_Omicron) & (date < end_Omicron)) ~ 1, .default = 0),
+  bigfile <- 
+    left_join(
+      bigfile00%>% select(location_name, date, inf_mean, daily_cases),
+      covariants, by=c("location_name" = "location_name")) %>% 
+    left_join(., pop, by=c("location_name" = "location_name")) %>% 
+    mutate(
+      nonvoc = case_when(
+        ((date >= start_NonVOC) & (date < end_NonVOC))  ~ 1, .default = 0),
+      alpha = case_when(
+        ((date >= start_Alpha) & (date < end_Alpha)) ~ 1, .default = 0),
+      beta = case_when(
+        ((date >= start_Beta) & (date < end_Beta)) ~ 1, .default = 0),
+      delta = case_when(
+        ((date >= start_Delta) & (date < end_Delta)) ~ 1, .default = 0),
+      gamma = case_when(
+        ((date >= start_Gamma) & (date < end_Gamma)) ~ 1, .default = 0),
+      omicron = case_when(
+        ((date >= start_Omicron) & (date < end_Omicron)) ~ 1, .default = 0),
+      
+      ba1 = case_when(
+        ((date >= start_BA.1) & (date < end_BA.1)) ~ 1, .default = 0),
+      ba2 = case_when(
+        ((date >= start_BA.2) & (date < end_BA.2)) ~ 1, .default = 0),
+      ba45 = case_when(
+        ((date >= start_BA4BA5) & (date < end_BA4BA5)) ~ 1, .default = 0),
+      prealpha = case_when(
+        ((date >= start_preAlpha) & (date < end_preAlpha)) ~ 1, .default = 0),
+      prebeta = case_when(
+        ((date >= start_preBeta) & (date < end_preBeta)) ~ 1, .default = 0),
+      predelta = case_when(
+        ((date >= start_preDelta) & (date < end_preDelta)) ~ 1, .default = 0),
+      pregamma = case_when(
+        ((date >= start_preGamma) & (date < end_preGamma)) ~ 1, .default = 0)
+      ) %>% 
     
-    ba1 = case_when(
-      ((date >= start_BA.1) & (date < end_BA.1)) ~ 1, .default = 0),
-    ba2 = case_when(
-      ((date >= start_BA.2) & (date < end_BA.2)) ~ 1, .default = 0),
-    ba45 = case_when(
-      ((date >= start_BA4BA5) & (date < end_BA4BA5)) ~ 1, .default = 0),
-   
-    prealpha = case_when(
-      ((date >= start_preAlpha) & (date < end_preAlpha)) ~ 1, .default = 0),
-    prebeta = case_when(
-      ((date >= start_preBeta) & (date < end_preBeta)) ~ 1, .default = 0),
-    predelta = case_when(
-      ((date >= start_preDelta) & (date < end_preDelta)) ~ 1, .default = 0),
-    pregamma = case_when(
-      ((date >= start_preGamma) & (date < end_preGamma)) ~ 1, .default = 0)
-    ) %>% 
-  
-  # selected_bigfile  bigfile %>% #filter(location_name %in% list27) %>% 
-  group_by(location_name) %>%
-  mutate(daily_cases_7dt = rollapplyr(daily_cases, 7, mean, fill = NA, align = "right"),
-         #daily_cases_7df = rollapplyr(daily_cases, 7, mean, fill = NA, align = "left"),
-         #daily_cases_7dc = rollapplyr(daily_cases, 7, mean, fill = NA, align = "center"),
-         #daily_cases_15dt = rollapplyr(daily_cases, 15, mean, fill = NA, align = "right"),
-         daily_cases_15dc = rollapplyr(daily_cases, 15, mean, fill = NA, align = "center"),
-         #daily_cases_15df = rollapplyr(daily_cases, 15, mean, fill = NA, align = "left"),
-         #daily_cases_14dc = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
-         #daily_cases_14df = rollapplyr(daily_cases, 14, mean, fill = NA, align = "left"),
-         #daily_cases_29dc = rollapplyr(daily_cases, 29, mean, fill = NA, align = "center"),
-         #daily_cases_29df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
-         #daily_cases_30df = rollapplyr(daily_cases, 29, mean, fill = NA, align = "left"),
-
-         #daily_slope = (daily_cases_7dt - lag(daily_cases_7dt))/daily_cases_7dt,
-
-         #inf_mean_7dc = rollapplyr(inf_mean, 7, mean, fill = NA, align = "center"),
-         #inf_mean_15d_f = rollapplyr(inf_mean, 15, mean, fill = NA, align = "left"),
-         #inf_mean_14d_f = rollapplyr(inf_mean, 14, mean, fill = NA, align = "left")
-  ) %>%
-
-  mutate(idr_v1 = daily_cases_7dt/inf_mean,
-         idr_v2 = daily_cases_7dc/inf_mean,
-         idr_v3 = daily_cases_7df/inf_mean,
-         idr_v4 = daily_cases_15dt/inf_mean,
-         idr_v5 = daily_cases_15dc/inf_mean,
-         idr_v6 = daily_cases_15df/inf_mean,
-         idr_v7 = daily_cases_14dc/inf_mean,
-         idr_v8 = daily_cases_14df/inf_mean,
-         idr_v9 = daily_cases_29dc/inf_mean,
-         idr_v10 = daily_cases_29df/inf_mean,
-         idr_v11 = daily_cases_30df/inf_mean
-         ) %>%
-
-  mutate(daily_cases_mill = daily_cases * (1000000/ population_2023),
-         daily_cases_15dt_mill = daily_cases_15dt * (1000000/ population_2023),
-         daily_cases_15dc_mill = daily_cases_15dc * (1000000/ population_2023),
-         daily_cases_15df_mill = daily_cases_15df * (1000000/ population_2023),
-         inf_mean_mill = inf_mean * (1000000/population_2023)
-         ) %>%
-  
-  ### big_regions <- 
-  #bigfile %>%
-  #select(-case_detection) %>%
-  #mutate(case_detection_7d = daily_cases_7d/inf_mean,
-  mutate( 
-    variant = case_when(
-      nonvoc == 1 ~ "Non-VOC",
-      #wildtype == 1 ~ "Wildtype",
-      alpha == 1 ~ "Alpha",
-      beta == 1 ~ "Beta",
-      delta == 1 ~ "Delta",
-      gamma == 1 ~ "Gamma",
-      omicron == 1 ~ "Omicron",
-      prealpha == 1 ~ "Pre-Alpha",
-      prebeta == 1 ~ "Pre-Beta",
-      pregamma == 1 ~ "Pre-Gamma",
-      predelta == 1 ~ "Pre-Delta",
-      .default = NA ),
+    group_by(location_name) %>%
+    mutate(daily_cases_7dt = rollapplyr(daily_cases, 7, mean, fill = NA, align = "right"),
+           daily_cases_15dc = rollapplyr(daily_cases, 15, mean, fill = NA, align = "center"),
+           idr_v5 = daily_cases_15dc/inf_mean,
+           daily_cases_mill = daily_cases * (1000000/ population_2023),
+           daily_cases_15dc_mill = daily_cases_15dc * (1000000/ population_2023),
+           inf_mean_mill = inf_mean * (1000000/population_2023)
+           ) %>%
     
-    subvariant = case_when(
-      ba1 == 1 ~ "BA.1",
-      ba2 == 1 ~ "BA.2",
-      ba45 == 1 ~ "BA.4 BA.5",
-      .default = NA),
-    
-    continent = case_when(
-      location_name %in% c("United States of America", "Canada") ~ "North America",
-      location_name %in% c("Japan", "Malaysia", "Israel", "Qatar", "China", "Singapore") ~ "Asia",
-      location_name %in% c("United Kingdom", "Italy", "France", "Germany", "Spain", "Denmark", "Finland", "Sweden", "Netherlands", "Belgium", "Greece", "Austria", "Portugal", "Ireland", "Luxembourg") ~ "Europe",
-      location_name %in% c("Chile",  "Colombia", "Brazil") ~ "South America",
-      location_name %in% c("South Africa") ~ "Africa",
-      .default = NA),
-    
-    region = case_when(
-      location_name %in% c("Japan", "Malaysia", "China", "Singapore") ~ "East Asia",
-      location_name %in% c("Israel", "Qatar") ~ "Middle East",
-      .default = continent)
+    mutate( 
+      variant = case_when(
+        nonvoc == 1 ~ "Non-VOC",
+        alpha == 1 ~ "Alpha",
+        beta == 1 ~ "Beta",
+        delta == 1 ~ "Delta",
+        gamma == 1 ~ "Gamma",
+        omicron == 1 ~ "Omicron",
+        prealpha == 1 ~ "Pre-Alpha",
+        prebeta == 1 ~ "Pre-Beta",
+        pregamma == 1 ~ "Pre-Gamma",
+        predelta == 1 ~ "Pre-Delta",
+        .default = NA ),
+      
+      subvariant = case_when(
+        ba1 == 1 ~ "BA.1",
+        ba2 == 1 ~ "BA.2",
+        ba45 == 1 ~ "BA.4 BA.5",
+        .default = NA),
+      
+      continent = case_when(
+        location_name %in% c("United States of America", "Canada") ~ "North America",
+        location_name %in% c("Japan", "Malaysia", "Israel", "Qatar", "China", "Singapore") ~ "Asia",
+        location_name %in% c("United Kingdom", "Italy", "France", "Germany", 
+                             "Spain", "Denmark", "Finland", "Sweden", "Netherlands", "Belgium", 
+                             "Greece", "Austria", "Portugal", "Ireland", "Luxembourg") ~ "Europe",
+        location_name %in% c("Chile",  "Colombia", "Brazil") ~ "South America",
+        location_name %in% c("South Africa") ~ "Africa",
+        .default = NA),
+      
+      region = case_when(
+        location_name %in% c("Japan", "Malaysia", "China", "Singapore") ~ "East Asia",
+        location_name %in% c("Israel", "Qatar") ~ "Middle East",
+        .default = continent)
     )
+  return(bigfile)
+}
 
 #write.csv(bigfile, 
 #             file = paste0(getwd(), "/../output/" ,"bigfile_", 
@@ -212,6 +152,16 @@ bigfile <-
 #             na = "",
 #             row.names = FALSE)
 
+```
+
+
+##Import IHME Data from function or from presaved file
+```{r IHME_import, echo=TRUE}
+if (work_laptop) { 
+  bigfile <- create_bigfile_from_IHME()
+  }else{
+    bigfile <- read.csv(paste0(getwd(), "/../bigfile.csv"))
+    }
 ```
 
 
