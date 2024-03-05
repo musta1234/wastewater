@@ -1,0 +1,15 @@
+SARI_Wohnregion_Patient_v202307.csv
+data.gv.at
+Patient-related timeline of hospital admissions with SARI-diagnoses: Province based on the place of residence of the patients
+Variable	Explanation
+KW	calendar week according to ISO8601
+WOHNORT	place of residence based on Province
+GESCHLECHT	M (male), W (female)
+ALTERSGRUPPE	age groups in yearly cohorts
+STATION	I (ICU), N (general ward)
+COVID	number of admissions with diagnosis ‘COVID-19’
+INFLUENZA	number of admissions with diagnosis ‘influenza’
+RSV	number of admissions with diagnosis ‘RSV’
+SONSTIGE	number of admissions with other SARI-diagnoses
+AUFNAHMEN	number of admissions with SARI-diagnoses
+BEV_ZAHL	population based on data of Statistics Austria

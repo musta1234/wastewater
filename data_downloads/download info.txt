@@ -1,0 +1,63 @@
+############ Austria
+https://abwassermonitoring.at/cbe1/dl_natmon_01.csv
+#Date; averaged cumulative cases of the last 7 days from human testing; total viral load [gene copies per day * 10^6]
+#Datum;gemittelte kumulierte Faelle der letzten 7 Tage aus den Humantestungen;Gesamtvirenfracht [Genkopien pro Tag * 10^6]
+#direct link
+https://opendata.sozialversicherung.at/sari/SARI_Wohnregion_Patient_v202307.csv?q=now
+
+https://abwassermonitoring.at/dashboard/
+Ã–sterreich == Austria
+#direct link
+https://abwassermonitoring.at/cbe1/dl_natmon_01.csv
+
+# Group; date; gene copies per EW / day * 10^6
+# Gruppe;Datum;Genkopien pro EW / Tag * 10^6
+
+############ Canada
+https://health-infobase.canada.ca/covid-19/wastewater/#download
+
+#cases and deaths
+https://health-infobase.canada.ca/covid-19/#a2
+
+############ Denmark
+https://experience.arcgis.com/experience/220fef27d07d438889d651cc2e00076c/page/Covid-19-Regionalt/
+
+
+############ Finland
+https://www.thl.fi/episeuranta/jatevesi/wastewater_weekly_report.html
+
+hospitalizations
+Finland hospitalizations 20240228 fact_epirapo_respinfcare
+https://sampo.thl.fi/pivot/prod/en/epirapo/respinfcare/fact_epirapo_respinfcare?row=769336L&column=measure-769452.769502.769317.769428.&filter=respinfcauserole-817278&fo=1 
+
+
+############ Netherlands
+
+https://coronadashboard.government.nl/verantwoording/virusdeeltjes-in-rioolwater
+
+############ Scotland
+
+https://informatics.sepa.org.uk/RNAmonitoring/
+
+############ Sweden
+https://www.pathogens.se/dashboards/wastewater/covid_quantification/covid_quant_slu/
+
+Dataset
+Contact: anna.szekely@slu.se and javier.vargas@slu.se
+
+Download the data: Respiratory virus gene copy numbers normalised per PMMoV gene copy number.CSV file.. Data are available from week 38 of 2020; updated weekly.
+
+How to cite the dataset:
+
+Székely, A. J., Malmberg, M., Vargas, J., Mohamed, N., Dafalla, I., Petrini, F., Davies, L. (2023). Dataset of SARS-CoV-2, influenza A and influenza B virus content in wastewater samples from wastewater treatment plants in Sweden. https://doi.org/10.17044/scilifelab.14256317.
+
+How to cite the method:
+
+Isaksson, F., Lundy, L., Hedström, A., Székely, A. J., Mohamed, N. (2022). Evaluating the Use of Alternative Normalization Approaches on SARS-CoV-2 Concentrations in Wastewater: Experiences from Two Catchments in Northern Sweden. Environments, 9, 39. https://doi.org/10.3390/environments9030039.
+
+############ United States
+
+https://covid.cdc.gov/covid-data-tracker/#trends_weeklyhospitaladmissions_select_00
+https://covid.cdc.gov/covid-data-tracker/#wastewater-surveillance
+https://covid.cdc.gov/covid-data-tracker/#trends_weeklydeaths_select_00
+
