@@ -13,9 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 dir.create(tempdir()) # solve Error in file(out, "wt") : cannot open the connection
 rm( list = ls())
 # load libraries
-preq = c( "dplyr", "ggplot2", "ggpmisc", "gridExtra", "ggfortify", "scales", 
-          "readxl", "readr", "stats", "tidyverse", "haven", "Matrix", "foreign",
-          "zoo", "prophet", "corrr", "purrr", "broom", "usethis")
+preq = c( "tidyverse","ggpmisc", "gridExtra", "ggfortify", "scales", 
+          "readxl", "readr", "stats", "haven", "Matrix", "foreign",
+          "zoo", "prophet", "corrr", "broom", "usethis", "rvest")
 #for (y in preq) install.packages(y, dep = TRUE)
 sapply(preq, library, character.only=T)
 

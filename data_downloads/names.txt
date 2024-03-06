@@ -1,0 +1,27 @@
+Austria 20240304 dl_blverlauf.csv
+Austria 20240304 dl_natmon_01.csv
+Austria 20240304 SARI_Wohnregion_Patient_v202307.csv
+Austria data dictionary 20240304.txt
+bigfile.csv
+Canada 20240304 covid19-casesdeaths-data-dictionary.csv
+Canada 20240304 covid19-download.csv
+Canada 20240304 covid19-RVDSS-data-dictionary.csv
+Canada 20240403 covid19-epiSummary-labIndicators2.csv
+data_table_for_currently_hospitalized_covid19_patients_-_the_united_states.csv
+data_table_for_weekly_covid19_hospital_admissions_-_the_united_states.csv
+data_table_for_weekly_deaths__the_united_states.csv
+Denmark 2024-01-31_dk_wastewater_data.csv
+Denmark 2024-02-28_dk_wastewater_data.csv
+Denmark 20240304 03_confirmed_cases_dead_admitted_sex.csv
+Denmark 20240304 06_new_admissions_region_day.csv
+Denmark 20240304 08_confirmed_cases_regions.csv
+Denmark readme-wastewater.pdf
+download info.txt
+Finland 20240304 Coronavirus wastewater monitoring weekly report.csv
+Finland 20240304 fact_epirapo_respinfcare.csv
+names.txt
+Netherlands 20240304 COVID-19_rioolwaterdata.csv
+Scotland RNAMonitoring_Public - Result Description - N1 Gene, Reported Value - N1 Gene (gc-l), Days Since.csv
+Sweden 2024 SLU_wastewater_data.csv
+Sweden SLU_COVID_collection_sites.xlsx
+United States 20240305 wastewater_surveillance_viral_activity_level_over_time_data.csv
