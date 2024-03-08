@@ -66,10 +66,11 @@ death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
 ```{r import_files, echo=TRUE}
 #import the files ww_aus, hosp_aus, cases_can, ww_can, ww_dk, cases_den, hosp_den, cases2_den, ww_fin, hosp_fin, ww_neth, ww_scot, ww_swe, sites_swe, ww_usa, hosp2_usa, hosp_usa, death_usa
 ww_aus_import <- 
-  read.csv(paste0(data_loc, "/", ww_aus), sep = ";") %>% 
+  read.csv(paste0(data_loc, "/", ww_aus), sep = ";") %>% View()
   mutate(Datum = ymd(Datum), location_name = "Austria")
 
-names(ww_aus_import) <- c("date", "cases_7dta", "ww_load")
+names(ww_aus_import) <- c("date", "cases_7dta", "ww_load") 
+# cases_7dta = averaged cumulative cases of the last 7 days from human testing
 
 hosp_aus_import <- 
   read.csv(paste0(data_loc, "/", hosp_aus), sep = ";")
@@ -78,16 +79,14 @@ names(hosp_aus_import) <- c("Week","Residence","Gender","Age_grp","hosp_icu","CO
 
 hosp_aus_import2 <-  
   hosp_aus_import %>% 
-  #write code to select "Week","Residence","Gender","Age_grp","hosp_icu","COVID","Population"
   select(Week, Residence, Gender, Age_grp, hosp_icu, COVID, Population) %>% 
-  
-  #write code to filter replace "I" with "ICU" and replace "N" with "Hosp" in the covid column "COVID"
-  mutate(hosp_icu = ifelse(hosp_icu == "I", "icu", "hosp") ) %>% #View()
+  mutate(hosp_icu = ifelse(hosp_icu == "I", "icu", "hosp") ) %>% 
   # split Week into two columns "Week" and "Year"
-  separate(Week, into = c("Week", "Year"), sep = ". KW ") %>% #View()
+  separate(Week, into = c("Week", "Year"), sep = ". KW ") %>% 
   #write code to convert "Week" and "Year" to date - this code has issues with epiweek so we will use new_week below to adjust for that
   mutate(predate = as.Date(paste0(Year, "-01-01")) + 7 * as.numeric(Week) - 1,
          new_week = ifelse(epiweek(predate) == as.numeric(Week), 
+                           # if epiweek is the same as the week number then we are good else we need to adjust the week number to give the right epiweek
                             as.numeric(Week),
                             epiweek(predate)),
           date = as.Date(paste0(Year, "-01-01")) + (7*new_week) -1) %>%
@@ -97,9 +96,31 @@ hosp_aus_import2 <-
   pivot_wider(names_from = hosp_icu, values_from = n, values_fill = 0) %>%
   mutate(location_name = "Austria")
 
-names(hosp_aus_import) <- c("date", "cases_7dta", "ww_load")
-cases_can_import <- read.csv(paste0(data_loc, "/", cases_can))
-ww_can_import <- read.csv(paste0(data_loc, "/", ww_can))
+cases_can_import <- 
+  read.csv(paste0(data_loc, "/", cases_can)) %>%
+  filter(prname == "Canada") %>%
+  select(prname, date, numtotal_last7, numdeaths_last7, ratecases_last7, 
+         ratedeaths_last7) %>%
+  #cases_7dts = Number of cases reported in the reporting week
+  #deaths_7dts = Number of deaths reported in the reporting week
+  #cases_7dts_rate = Rate of cases reported in the reporting week
+  #deaths_7dts_rate = Rate of deaths reported in the reporting week
+  rename(location_name = prname, cases_7dts = numtotal_last7, 
+         deaths_7dts = numdeaths_last7, cases_7dts_rate = ratecases_last7, 
+         deaths_7dts_rate = ratedeaths_last7) %>%
+  mutate(date = ymd(date))
+
+
+ww_can_import <- 
+  read.csv(paste0(data_loc, "/", ww_can)) %>%
+  group_by(Date) %>%
+  summarize(ww_load_median = median(viral_load),
+            ww_load_mean = mean(viral_load)
+            ) %>%
+  mutate(date = ymd(Date), location_name = "Canada") %>%
+  select(date, location_name, ww_load_median, ww_load_mean)
+#check correlation btw imputed ww and cases, hospitalization, deaths
+
 ww_dk_import <- read.csv(paste0(data_loc, "/", ww_dk))
 cases_den_import <- read.csv(paste0(data_loc, "/", cases_den))
 hosp_den_import <- read.csv(paste0(data_loc, "/", hosp_den))
@@ -120,7 +141,11 @@ death_usa_import <- read.csv(paste0(data_loc, "/", death_usa))
 
 ```{r import_IHME, echo=TRUE}
 
+#Austria
+#Canada - check correlation btw imputed ww and cases, hospitalization, deaths
 
+
+```
 
 
 
