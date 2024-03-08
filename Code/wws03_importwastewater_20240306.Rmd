@@ -29,6 +29,15 @@ data_loc <- paste0(file_loc, "/data_downloads/") # a location for data files
 # check if the string contains "mustam23"
 work_laptop <- grepl("mustam23", getwd())
 ```
+
+```{r import_bigfile, echo=TRUE}
+# read the big file
+bigfile <- read.csv(paste0(data_loc, "/bigfile.csv"))
+    #select all date columns and convert them to date
+    selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
+    bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
+```
+
 #below is a list of all files we want to import and modify
 
 ```{r define_filenames, echo=TRUE}
@@ -38,33 +47,82 @@ ww_aus <- "Austria 20240304 dl_natmon_01.csv"
 hosp_aus <- "Austria 20240304 SARI_Wohnregion_Patient_v202307.csv"
 cases_can <- "Canada 20240304 covid19-download.csv"
 ww_can <- "Canada 20240306 covid19-wastewater.csv"
-
+ww_dk <- "Denmark 2024-02-28_dk_wastewater_data.csv"
+cases_den <- "Denmark 20240304 03_confirmed_cases_dead_admitted_sex.csv"
+hosp_den <- "Denmark 20240304 06_new_admissions_region_day.csv"
+cases2_den <- "Denmark 20240304 08_confirmed_cases_regions.csv"
+ww_fin <- "Finland 20240304 Coronavirus wastewater monitoring weekly report.csv"
+hosp_fin <- "Finland 20240304 fact_epirapo_respinfcare.csv"
+ww_neth <- "Netherlands 20240304 COVID-19_rioolwaterdata.csv"
+ww_scot <- "Scotland RNAMonitoring_Public - Result Description - N1 Gene, Reported Value - N1 Gene (gc-l), Days Since.csv"
+ww_swe <- "Sweden 2024 SLU_wastewater_data.csv"
+sites_swe <- "Sweden SLU_COVID_collection_sites.xlsx"
+ww_usa <- "United States 20240305 wastewater_surveillance_viral_activity_level_over_time_data.csv"
 hosp2_usa <- "data_table_for_currently_hospitalized_covid19_patients_-_the_united_states.csv"
 hosp_usa <- "data_table_for_weekly_covid19_hospital_admissions_-_the_united_states.csv"
 death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
-ww_dk <- "Denmark 2024-02-28_dk_wastewater_data.csv"
-cases_dk <- "Denmark 20240304 03_confirmed_cases_dead_admitted_sex.csv"
-hosp_dk <- "Denmark 20240304 06_new_admissions_region_day.csv"
-cases2_dk <- "Denmark 20240304 08_confirmed_cases_regions.csv"
- <- "Finland 20240304 Coronavirus wastewater monitoring weekly report.csv"
- <- "Finland 20240304 fact_epirapo_respinfcare.csv"
-
- <- "Netherlands 20240304 COVID-19_rioolwaterdata.csv"
- <- "Scotland RNAMonitoring_Public - Result Description - N1 Gene, Reported Value - N1 Gene (gc-l), Days Since.csv"
- <- "Sweden 2024 SLU_wastewater_data.csv"
- <- "Sweden SLU_COVID_collection_sites.xlsx"
- <- "United States 20240305 wastewater_surveillance_viral_activity_level_over_time_data.csv"
 ```
 
+```{r import_files, echo=TRUE}
+#import the files ww_aus, hosp_aus, cases_can, ww_can, ww_dk, cases_den, hosp_den, cases2_den, ww_fin, hosp_fin, ww_neth, ww_scot, ww_swe, sites_swe, ww_usa, hosp2_usa, hosp_usa, death_usa
+ww_aus_import <- 
+  read.csv(paste0(data_loc, "/", ww_aus), sep = ";") %>% 
+  mutate(Datum = ymd(Datum), location_name = "Austria")
 
+names(ww_aus_import) <- c("date", "cases_7dta", "ww_load")
 
-```{r import_bigfile, echo=TRUE}
-# read the big file
-bigfile <- read.csv(paste0(data_loc, "/bigfile.csv"))
-    #select all date columns and convert them to date
-    selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
-    bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
+hosp_aus_import <- 
+  read.csv(paste0(data_loc, "/", hosp_aus), sep = ";")
+  
+names(hosp_aus_import) <- c("Week","Residence","Gender","Age_grp","hosp_icu","COVID","INFLUENZA","RSV","OTHER","SARI_total","Population")
+
+hosp_aus_import2 <-  
+  hosp_aus_import %>% 
+  #write code to select "Week","Residence","Gender","Age_grp","hosp_icu","COVID","Population"
+  select(Week, Residence, Gender, Age_grp, hosp_icu, COVID, Population) %>% 
+  
+  #write code to filter replace "I" with "ICU" and replace "N" with "Hosp" in the covid column "COVID"
+  mutate(hosp_icu = ifelse(hosp_icu == "I", "icu", "hosp") ) %>% #View()
+  # split Week into two columns "Week" and "Year"
+  separate(Week, into = c("Week", "Year"), sep = ". KW ") %>% #View()
+  #write code to convert "Week" and "Year" to date - this code has issues with epiweek so we will use new_week below to adjust for that
+  mutate(predate = as.Date(paste0(Year, "-01-01")) + 7 * as.numeric(Week) - 1,
+         new_week = ifelse(epiweek(predate) == as.numeric(Week), 
+                            as.numeric(Week),
+                            epiweek(predate)),
+          date = as.Date(paste0(Year, "-01-01")) + (7*new_week) -1) %>%
+
+  group_by(date, hosp_icu) %>% summarize(n = sum(COVID)) %>%
+  
+  pivot_wider(names_from = hosp_icu, values_from = n, values_fill = 0) %>%
+  mutate(location_name = "Austria")
+
+names(hosp_aus_import) <- c("date", "cases_7dta", "ww_load")
+cases_can_import <- read.csv(paste0(data_loc, "/", cases_can))
+ww_can_import <- read.csv(paste0(data_loc, "/", ww_can))
+ww_dk_import <- read.csv(paste0(data_loc, "/", ww_dk))
+cases_den_import <- read.csv(paste0(data_loc, "/", cases_den))
+hosp_den_import <- read.csv(paste0(data_loc, "/", hosp_den))
+cases2_den_import <- read.csv(paste0(data_loc, "/", cases2_den))
+ww_fin_import <- read.csv(paste0(data_loc, "/", ww_fin))
+hosp_fin_import <- read.csv(paste0(data_loc, "/", hosp_fin))
+ww_neth_import <- read.csv(paste0(data_loc, "/", ww_neth))
+
+#
+ww_scot_import <- read.csv(paste0(data_loc, "/", ww_scot))
+ww_swe_import <- read.csv(paste0(data_loc, "/", ww_swe))
+sites_swe_import <- read_excel(paste0(data_loc, "/", sites_swe))
+ww_usa_import <- read.csv(paste0(data_loc, "/", ww_usa))
+hosp2_usa_import <- read.csv(paste0(data_loc, "/", hosp2_usa))
+hosp_usa_import <- read.csv(paste0(data_loc, "/", hosp_usa))
+death_usa_import <- read.csv(paste0(data_loc, "/", death_usa))
 ```
+
+```{r import_IHME, echo=TRUE}
+
+
+
+
 
 ```{r import_IHME, echo=TRUE}
 
