@@ -15,7 +15,7 @@ rm( list = ls())
 # load libraries
 preq = c( "tidyverse","ggpmisc", "gridExtra", "ggfortify", "scales", 
           "readxl", "readr", "stats", "haven", "Matrix", "foreign",
-          "zoo", "prophet", "corrr", "broom", "usethis", "rvest")
+          "zoo", "prophet", "corrr", "broom", "usethis", "rvest", "data.table")
 #for (y in preq) install.packages(y, dep = TRUE)
 sapply(preq, library, character.only=T)
 ```
@@ -50,7 +50,7 @@ ww_can <- "Canada 20240306 covid19-wastewater.csv"
 ww_dk <- "Denmark 2024-02-28_dk_wastewater_data.csv"
 cases_den <- "Denmark 20240304 03_confirmed_cases_dead_admitted_sex.csv"
 hosp_den <- "Denmark 20240304 06_new_admissions_region_day.csv"
-cases2_den <- "Denmark 20240304 08_confirmed_cases_regions.csv"
+#cases2_den <- "Denmark 20240304 08_confirmed_cases_regions.csv"
 ww_fin <- "Finland 20240304 Coronavirus wastewater monitoring weekly report.csv"
 hosp_fin <- "Finland 20240304 fact_epirapo_respinfcare.csv"
 ww_neth <- "Netherlands 20240304 COVID-19_rioolwaterdata.csv"
@@ -66,66 +66,97 @@ death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
 ```{r import_files, echo=TRUE}
 #import the files ww_aus, hosp_aus, cases_can, ww_can, ww_dk, cases_den, hosp_den, cases2_den, ww_fin, hosp_fin, ww_neth, ww_scot, ww_swe, sites_swe, ww_usa, hosp2_usa, hosp_usa, death_usa
 ww_aus_import <- 
-  read.csv(paste0(data_loc, "/", ww_aus), sep = ";") %>% View()
+  read.csv(paste0(data_loc, "/", ww_aus), sep = ";") %>% 
   mutate(Datum = ymd(Datum), location_name = "Austria")
 
-names(ww_aus_import) <- c("date", "cases_7dta", "ww_load") 
+names(ww_aus_import) <- c("date", "cases_7dta", "viral_load") 
 # cases_7dta = averaged cumulative cases of the last 7 days from human testing
 
 hosp_aus_import <- 
-  read.csv(paste0(data_loc, "/", hosp_aus), sep = ";")
-  
-names(hosp_aus_import) <- c("Week","Residence","Gender","Age_grp","hosp_icu","COVID","INFLUENZA","RSV","OTHER","SARI_total","Population")
-
-hosp_aus_import2 <-  
-  hosp_aus_import %>% 
-  select(Week, Residence, Gender, Age_grp, hosp_icu, COVID, Population) %>% 
+  read.csv(paste0(data_loc, "/", hosp_aus), sep = ";") %>%
+  #rename columns
+  rename_with(
+    ~ c("Week","Residence","Gender","Age_grp","hosp_icu","COVID","INFLUENZA",
+       "RSV","OTHER","SARI_total","Population")
+  ) %>%
+  select(Week, Residence, Gender, Age_grp, hosp_icu, COVID, Population) %>%
   mutate(hosp_icu = ifelse(hosp_icu == "I", "icu", "hosp") ) %>% 
   # split Week into two columns "Week" and "Year"
   separate(Week, into = c("Week", "Year"), sep = ". KW ") %>% 
   #write code to convert "Week" and "Year" to date - this code has issues with epiweek so we will use new_week below to adjust for that
   mutate(predate = as.Date(paste0(Year, "-01-01")) + 7 * as.numeric(Week) - 1,
+                # if epiweek is the same as the week number then we are good 
+                # else we need to adjust the week number to give the right epiweek
          new_week = ifelse(epiweek(predate) == as.numeric(Week), 
-                           # if epiweek is the same as the week number then we are good else we need to adjust the week number to give the right epiweek
                             as.numeric(Week),
                             epiweek(predate)),
           date = as.Date(paste0(Year, "-01-01")) + (7*new_week) -1) %>%
-
   group_by(date, hosp_icu) %>% summarize(n = sum(COVID)) %>%
-  
-  pivot_wider(names_from = hosp_icu, values_from = n, values_fill = 0) %>%
+    pivot_wider(names_from = hosp_icu, values_from = n, values_fill = 0) %>%
   mutate(location_name = "Austria")
+#View(hosp_aus_import)
 
 cases_can_import <- 
   read.csv(paste0(data_loc, "/", cases_can)) %>%
   filter(prname == "Canada") %>%
   select(prname, date, numtotal_last7, numdeaths_last7, ratecases_last7, 
          ratedeaths_last7) %>%
-  #cases_7dts = Number of cases reported in the reporting week
-  #deaths_7dts = Number of deaths reported in the reporting week
-  #cases_7dts_rate = Rate of cases reported in the reporting week
-  #deaths_7dts_rate = Rate of deaths reported in the reporting week
+  #cases_7dts = Number of cases/deaths reported in the reporting week
+  #cases_7dts_rate = Rate of cases/deaths reported in the reporting week
   rename(location_name = prname, cases_7dts = numtotal_last7, 
          deaths_7dts = numdeaths_last7, cases_7dts_rate = ratecases_last7, 
          deaths_7dts_rate = ratedeaths_last7) %>%
   mutate(date = ymd(date))
 
-
 ww_can_import <- 
   read.csv(paste0(data_loc, "/", ww_can)) %>%
   group_by(Date) %>%
-  summarize(ww_load_median = median(viral_load),
-            ww_load_mean = mean(viral_load)
+  summarize(viral_load_median = median(viral_load),
+            viral_load_mean = mean(viral_load)
             ) %>%
   mutate(date = ymd(Date), location_name = "Canada") %>%
   select(date, location_name, ww_load_median, ww_load_mean)
 #check correlation btw imputed ww and cases, hospitalization, deaths
 
-ww_dk_import <- read.csv(paste0(data_loc, "/", ww_dk))
-cases_den_import <- read.csv(paste0(data_loc, "/", cases_den))
-hosp_den_import <- read.csv(paste0(data_loc, "/", hosp_den))
-cases2_den_import <- read.csv(paste0(data_loc, "/", cases2_den))
-ww_fin_import <- read.csv(paste0(data_loc, "/", ww_fin))
+ww_dk_import <- 
+  read.csv(paste0(data_loc, "/", ww_dk)) %>%
+  mutate(date = ymd(date), location_name = "Denmark") %>%
+  rename(viral_load = rna_mean_faeces) %>%
+  select(date, location_name, viral_load, lab)
+
+cases_den_import <- 
+  read.csv(paste0(data_loc, "/", cases_den), sep = ";") %>%
+  #hack to rename all variables using a vector
+  rename_with(
+    ~ c("Region_code", "Region", "Sampling_date", "Sex", "Total_cases", 
+        "Deaths", "Admissions", "Cumulative_deaths", "Cumulative_confirmedcases", 
+        "Cumulative_admissions", "Timestamp")
+    ) %>%
+  mutate(date = ymd(Sampling_date)) %>%
+  group_by(date) %>%
+  summarize(cases = sum(Total_cases), deaths = sum(Deaths), hosp = sum(Admissions)) #%>%
+
+hosp_den_import <- 
+  read.csv(paste0(data_loc, "/", hosp_den), sep = ";") %>%
+  rename_with(
+    ~ c("Region_code", "region", "date", "new_admissions", "timestamp")
+    ) %>%
+  mutate(date = ymd(date)) %>%
+  group_by(date) %>%
+  summarize(hosp = sum(new_admissions))
+#cases2_den_import <- read.csv(paste0(data_loc, "/", cases2_den))
+
+ww_fin_import <- 
+  read.csv(paste0(data_loc, "/", ww_fin)) %>%
+  filter(Treatment.plant == "Entire country") %>%
+  rename_with(
+    ~ c("date", "Treatment_plant", "Location", 
+                            "Number_residents", "Coronavirus.result.from.the.sample", 
+                            "Uncertainties", "Inflow", "viral_load_DNA", "viral_load_RNA")
+    ) %>%
+  select(date, viral_load_DNA, viral_load_RNA) %>%
+  mutate(date = ymd(date), location_name = "Finland")
+
 hosp_fin_import <- read.csv(paste0(data_loc, "/", hosp_fin))
 ww_neth_import <- read.csv(paste0(data_loc, "/", ww_neth))
 
