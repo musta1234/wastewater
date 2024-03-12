@@ -63,6 +63,30 @@ hosp_usa <- "data_table_for_weekly_covid19_hospital_admissions_-_the_united_stat
 death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
 ```
 
+########### Function to convert epiweek to date
+```{r epiweek_to_date, echo=TRUE}
+
+# write a function with a single input year that returns a correction factor of -3 if the year is 2020, 2 if the year is 2021, 1 if the year is 2022, 0 if the year is 2023, -1 if the year is 2024
+correction_factor <- function(year) {
+  year <- as.integer(year)   #force year to be an integer
+  correction <- c(5, -3, 2, 1, 0, -1, -3)
+  names(correction) <- c(2019:2025) #edit this and above lines to expand vector beyond 2025
+  return(correction[year - 2019])
+}
+
+
+epiweek_to_date <- function(Year = 2020, Week =1) {
+  #force Year and Week to be integers
+  Year <- as.integer(Year)
+  Week <- as.integer(Week)
+  #return the date of the first day of the week
+  return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 + correction_factor(Year))
+}
+
+
+```
+
+
 ```{r import_files, echo=TRUE}
 #import the files ww_aus, hosp_aus, cases_can, ww_can, ww_dk, cases_den, hosp_den, cases2_den, ww_fin, hosp_fin, ww_neth, ww_scot, ww_swe, sites_swe, ww_usa, hosp2_usa, hosp_usa, death_usa
 ww_aus_import <- 
@@ -83,17 +107,13 @@ hosp_aus_import <-
   mutate(hosp_icu = ifelse(hosp_icu == "I", "icu", "hosp") ) %>% 
   # split Week into two columns "Week" and "Year"
   separate(Week, into = c("Week", "Year"), sep = ". KW ") %>% 
-  #write code to convert "Week" and "Year" to date - this code has issues with epiweek so we will use new_week below to adjust for that
-  mutate(predate = as.Date(paste0(Year, "-01-01")) + 7 * as.numeric(Week) - 1,
-                # if epiweek is the same as the week number then we are good 
-                # else we need to adjust the week number to give the right epiweek
-         new_week = ifelse(epiweek(predate) == as.numeric(Week), 
-                            as.numeric(Week),
-                            epiweek(predate)),
-          date = as.Date(paste0(Year, "-01-01")) + (7*new_week) -1) %>%
+  #convert "Week" and "Year" to integers
+  mutate(Week = as.integer(Week), Year = as.integer(Year)) %>%
+  mutate(date = epiweek_to_date(Year, Week)) %>% 
   group_by(date, hosp_icu) %>% summarize(n = sum(COVID)) %>%
     pivot_wider(names_from = hosp_icu, values_from = n, values_fill = 0) %>%
   mutate(location_name = "Austria")
+
 #View(hosp_aus_import)
 
 cases_can_import <- 
@@ -157,7 +177,22 @@ ww_fin_import <-
   select(date, viral_load_DNA, viral_load_RNA) %>%
   mutate(date = ymd(date), location_name = "Finland")
 
-hosp_fin_import <- read.csv(paste0(data_loc, "/", hosp_fin))
+hosp_fin_import <- 
+  read.csv(paste0(data_loc, "/", hosp_fin), sep = ";") %>%
+  #keep only rows with "new" in the "Measure" column
+  filter(grepl("new", Measure)) %>%
+  #split Time column into week and year
+  separate(Time, into = c("Week", "Year"), sep = "/") %>%
+  # delete "Week " from the "Week" column
+  mutate(Week = as.integer(str_remove(Week, "Week ")),
+         Year = as.integer(Year)) %>%
+  mutate(date = epiweek_to_date(Year, Week)) %>%
+  group_by(date) %>% summarize(hosp = sum(val)) %>% 
+  #pivot_wider(names_from = new, values_from = hosp, values_fill = 0) %>%
+  mutate(location_name = "Finland") %>%
+  select(date, location_name, hosp)  
+ # View(hosp_fin_import)
+
 ww_neth_import <- read.csv(paste0(data_loc, "/", ww_neth))
 
 #
