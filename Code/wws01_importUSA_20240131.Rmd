@@ -1,0 +1,127 @@
+---
+title: "ImportUnderreports"
+author: "Mustapha Mustapha"
+date: "2023-04-06"
+output: html_document
+---
+## This is a script that imports and merges:
+# wastewater, IHME estimates, cases, deaths and hospitalizations data from IHME
+
+```{r import_nwss, echo=TRUE}
+latest_wastewater <- "/Data/NWSS/NWSSRegionalLevel_17Jan2024.tab"
+latest_covidnet <- "/Data/COVID-NET/Weekly_Rates_of_Laboratory-Confirmed_COVID-19_Hospitalizations_from_the_COVID-NET_Surveillance_System_20240129.csv"
+latest_cdchosp <- "/Data/CDC/data_table_for_weekly_covid19_hospital_admissions_-_the_united_states.csv"
+latest_cdcdeath <- "/Data/CDC/data_table_for_weekly_deaths__the_united_states.csv"
+
+```
+
+#import nwss
+```{r import_nwss, echo=TRUE}
+nwss <- 
+  read.delim(paste0(file_loc, latest_wastewater)) %>% 
+  filter(date_period == "All Results") %>% 
+  mutate(date=as.Date.character(date)) %>% 
+  select(date, National) %>% 
+  rename(nwss = National) %>%
+  mutate(nwss_ln1 = log(1+nwss)) #ln(1+nwss) trying to copy the EID methodology
+  #select(date, National) %>% plot(type="l")
+
+#min_nwss <- min(nwss$date) #this is the earliest data point in NWSS database #max_nwss <- max(nwss$date) 
+```
+#import covid-net hospitalization
+```{r merge_bigfile_nwss, echo=TRUE}
+covidnet <- 
+  read.csv(paste0(file_loc, latest_covidnet)) %>% 
+  filter(State == "COVID-NET", Age.Category == "All", Sex == "All", Race == "All") %>% 
+  mutate(date = mdy(
+    gsub("\\ .*", "", Week.ending.date, perl = TRUE)
+    )) %>% 
+  select(date, Rate) %>%
+  rename(covidnet_hosp = Rate)
+```
+
+#import cdc hospitalizations and death
+```{r import_nwss, echo=TRUE}
+cdcdeath <- 
+  read.csv(paste0(file_loc, latest_cdcdeath), skip = 2) %>% 
+  #filter(Weekly.Deaths == "N/A") %>% View()
+  mutate(date = mdy(Date), 
+         Weekly.Deaths = as.numeric(Weekly.Deaths)) %>%
+  select(date, Weekly.Deaths, Death.Data.As.Of) %>%
+  rename(cdc_death =  Weekly.Deaths, cdc_death_as_of = Death.Data.As.Of) #%>% View()
+
+cdchosp <- 
+  read.csv(paste0(file_loc, latest_cdchosp), skip = 2) %>%
+  filter(Weekly.COVID.19.Hospital.Admissions != "N/A") %>%
+  mutate(date = mdy(Date)) %>%
+  select(date, Weekly.COVID.19.Hospital.Admissions) %>%
+  rename(cdc_hosp =  Weekly.COVID.19.Hospital.Admissions) %>%
+  mutate(cdc_hosp = as.numeric(cdc_hosp))
+
+```
+
+#simplify bigfile
+```{r simplify_bigfile, echo=TRUE}
+bigfile_simple <- 
+  bigfile %>% 
+  select(location_name, date, inf_mean, daily_cases, daily_cases_15dc, 
+         idr_v5, daily_cases_mill, population_2023, variant, subvariant, 
+         continent, region) %>%
+  mutate(
+    ihme_wkly = rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
+    cases_wkly = rollapplyr(daily_cases, 7, sum, fill = NA, align = "right"),
+    cases_15dc_wkly = rollapplyr(daily_cases_15dc, 7, sum, fill = NA, align = "right"),
+    cases_mill_wkly = rollapplyr(daily_cases_mill, 7, sum, fill = NA, align = "right"),
+    idr_wkly = cases_15dc_wkly/ihme_wkly
+  )
+```
+
+#merge bigfile nwss covid-net cdch_hosp cdc_death
+```{r merge_bigfile_nwss, echo=TRUE}
+big_nwss <-
+  bigfile_simple %>% ungroup() %>%
+  filter(location_name == "United States of America" 
+                     #& date >= min_nwss
+                     ) %>% 
+  full_join(., nwss) %>% 
+  full_join(., covidnet) %>% 
+  full_join(., cdcdeath) %>%
+  full_join(., cdchosp) %>%
+  filter( 
+    !is.na(nwss) | !is.na(cdc_hosp) | !is.na(cdc_death) | !is.na(covidnet_hosp)
+  ) 
+  # keep only if one of (cdc covidnet and nwss) is nonmissing 
+```
+
+#export to csv
+```{r merge_bigfile_nwss, echo=TRUE}
+
+write.csv(big_nwss,
+          file = paste0(getwd(), "/../output/" ,"bigfile_nwss_", 
+                                     paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+          quote = TRUE,
+          na = "",
+          row.names = FALSE)
+```
+
+#calculate correlations and run models for USA
+```{r usa_nwss, echo=TRUE}
+library(corrr)
+#names1 <- names(big_nwss)[c(3:7, 13:21, 23)]
+
+corr_usa <- 
+  big_nwss %>% ungroup() %>%
+  #select(c(3:7, 13:21, 23)) %>% #View()
+  #nest() %>%
+  correlate()
+
+write.csv(corr_usa,
+          file = paste0(getwd(), "/../output/" ,"corr_usa_", 
+                                     paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+          quote = TRUE,
+          na = "",
+          row.names = FALSE)
+
+```
+
+############################### END ##################################

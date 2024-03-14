@@ -54,7 +54,7 @@ hosp_den <- "Denmark 20240304 06_new_admissions_region_day.csv"
 ww_fin <- "Finland 20240304 Coronavirus wastewater monitoring weekly report.csv"
 hosp_fin <- "Finland 20240304 fact_epirapo_respinfcare.csv"
 ww_neth <- "Netherlands 20240304 COVID-19_rioolwaterdata.csv"
-ww_scot <- "Scotland RNAMonitoring_Public - Result Description - N1 Gene, Reported Value - N1 Gene (gc-l), Days Since.csv"
+ww_scot <- "Scotland RNAMonitoring_Public.csv"
 ww_swe <- "Sweden 2024 SLU_wastewater_data.csv"
 sites_swe <- "Sweden SLU_COVID_collection_sites.xlsx"
 ww_usa <- "United States 20240305 wastewater_surveillance_viral_activity_level_over_time_data.csv"
@@ -163,7 +163,8 @@ hosp_den_import <-
     ) %>%
   mutate(date = ymd(date)) %>%
   group_by(date) %>%
-  summarize(hosp = sum(new_admissions))
+  summarize(hosp = sum(new_admissions)) %>%
+  mutate(location_name = "Denmark")
 #cases2_den_import <- read.csv(paste0(data_loc, "/", cases2_den))
 
 ww_fin_import <- 
@@ -193,11 +194,19 @@ hosp_fin_import <-
   select(date, location_name, hosp)  
  # View(hosp_fin_import)
 
-ww_neth_import <- read.csv(paste0(data_loc, "/", ww_neth))
+ww_neth_import <- 
+  read.csv(paste0(data_loc, "/", ww_neth), sep = ";") %>%
+  mutate(date = ymd(Date_measurement)) %>%
+  group_by(date) %>%
+  summarize(count = n())
+  
+#ww_scot_import <-  read.delim(paste0(data_loc, "/", ww_scot))
 
-#
-ww_scot_import <- read.csv(paste0(data_loc, "/", ww_scot))
-ww_swe_import <- read.csv(paste0(data_loc, "/", ww_swe))
+ww_swe_import <- 
+  read.csv(paste0(data_loc, "/", ww_swe))
+
+View(ww_swe_import)
+
 sites_swe_import <- read_excel(paste0(data_loc, "/", sites_swe))
 ww_usa_import <- read.csv(paste0(data_loc, "/", ww_usa))
 hosp2_usa_import <- read.csv(paste0(data_loc, "/", hosp2_usa))
