@@ -50,7 +50,7 @@ ww_can <- "Canada 20240306 covid19-wastewater.csv"
 ww_dk <- "Denmark 2024-02-28_dk_wastewater_data.csv"
 cases_den <- "Denmark 20240304 03_confirmed_cases_dead_admitted_sex.csv"
 hosp_den <- "Denmark 20240304 06_new_admissions_region_day.csv"
-#cases2_den <- "Denmark 20240304 08_confirmed_cases_regions.csv"
+cases2_den <- "Denmark 20240304 08_confirmed_cases_regions.csv"
 ww_fin <- "Finland 20240304 Coronavirus wastewater monitoring weekly report.csv"
 hosp_fin <- "Finland 20240304 fact_epirapo_respinfcare.csv"
 ww_neth <- "Netherlands 20240304 COVID-19_rioolwaterdata.csv"
@@ -141,7 +141,7 @@ ww_can_import <-
 ww_dk_import <- 
   read.csv(paste0(data_loc, "/", ww_dk)) %>%
   mutate(date = ymd(date), location_name = "Denmark") %>%
-  rename(viral_load = rna_mean_faeces) %>%
+  rename(viral_load = rna_mean_faeces, notes = lab) %>%
   select(date, location_name, viral_load, notes)
 
 cases_den_import <-   #hospitalization variable does not match OWID data
@@ -154,12 +154,12 @@ cases_den_import <-   #hospitalization variable does not match OWID data
     ) %>%
   mutate(date = ymd(Sampling_date)) %>%
   group_by(date) %>%
-  summarize(cases = sum(Total_cases), deaths = sum(Deaths), hosp_ = sum(Admissions)) %>%
+  summarize(cases = sum(Total_cases), deaths = sum(Deaths), hosp_alt = sum(Admissions)) %>%
   #hospitalization variable does not match OWID data
   mutate(location_name = "Denmark", 
          cases_wkly = rollapplyr(cases, 7, sum, fill = NA, align = "right"), 
          deaths_wkly = rollapplyr(deaths, 7, sum, fill = NA, align = "right"),
-         hosp__wkly = rollapplyr(hosp_, 7, sum, fill = NA, align = "right")
+         hosp_alt_wkly = rollapplyr(hosp_alt, 7, sum, fill = NA, align = "right")
          )
 
 hosp_den_import <-   #hosp_new matches new hospitalizations in OWID data
@@ -279,24 +279,30 @@ ww_aus_hosp <-
          #test2 = viral_load_prewkly/(7-sumisnaviralload),
          #test3 = test1/test2
     ) %>%
-  select(-viral_load_prewkly, -is_na_viral_load, -sumisnaviralload)
+  select(-viral_load_prewkly, -is_na_viral_load, -sumisnaviralload) %>%
+  arrange(date)
 
   
 ww_can_hosp <-
-  left_join(ww_can_import, cases_can_import, by = c("date", "location_name")) %>%
+  full_join(ww_can_import, cases_can_import, by = c("date", "location_name")) %>%
   mutate(viral_load_median_wkly = rollapplyr(viral_load_median, 7, sum, na.rm = TRUE, 
                                              fill = NA, align = "right"),
          viral_load_mean_wkly = rollapplyr(viral_load_mean, 7, sum, na.rm = TRUE, 
                                            fill = NA, align = "right")
-         )
+         )%>%
+  arrange(date)
+
+
+ww_dk_hosp <-
+  full_join(ww_dk_import, hosp_den_import, by = c("date", "location_name")) %>%
+  full_join(., cases_den_import, by = c("date", "location_name")) %>%
+  arrange(date)
+
+
 
   
+```  
   
-cases_can_import <- 
-ww_can_import <- 
-ww_dk_import <- 
-cases_den_import <-  
-hosp_den_import <-   
 ww_fin_import <- 
 hosp_fin_import <- 
 ww_neth_import <- 
