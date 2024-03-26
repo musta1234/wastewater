@@ -6,4 +6,6 @@
 .httr-oauth
 .DS_Store
 .quarto
+output/
+images/
 wastewater.Rproj

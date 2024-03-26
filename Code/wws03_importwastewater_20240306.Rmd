@@ -263,6 +263,34 @@ death_usa_import <-
 View(ww_aus_import) 
 View(hosp_aus_import)  
   
+#merge wastewater with hospitalization data for each country
+ww_aus_hosp <- 
+  left_join(ww_aus_import, hosp_aus_import, by = c("date", "location_name")) %>%
+  select(date, location_name, cases_wkly, viral_load, icu_wkly, hosp_wkly) %>%
+  mutate( #calculate the 7 day average of viral load while imputing missing values using the average 
+    viral_load_prewkly = rollapplyr(viral_load, 7, sum, na.rm = TRUE, 
+                                    fill = NA, align = "right"), 
+    is_na_viral_load = is.na(viral_load),
+    sumisnaviralload = rollapplyr(is_na_viral_load, 7, sum, na.rm = TRUE, 
+                                  fill = NA, align = "right" ),
+    viral_load_wkly = viral_load_prewkly + 
+      (sumisnaviralload*(viral_load_prewkly/(7-sumisnaviralload))),
+         #test1 = viral_load_wkly/7,
+         #test2 = viral_load_prewkly/(7-sumisnaviralload),
+         #test3 = test1/test2
+    ) %>%
+  select(-viral_load_prewkly, -is_na_viral_load, -sumisnaviralload)
+
+  
+ww_can_hosp <-
+  left_join(ww_can_import, cases_can_import, by = c("date", "location_name")) %>%
+  mutate(viral_load_median_wkly = rollapplyr(viral_load_median, 7, sum, na.rm = TRUE, 
+                                             fill = NA, align = "right"),
+         viral_load_mean_wkly = rollapplyr(viral_load_mean, 7, sum, na.rm = TRUE, 
+                                           fill = NA, align = "right")
+         )
+
+  
   
 cases_can_import <- 
 ww_can_import <- 
