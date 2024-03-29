@@ -82,8 +82,37 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   #return the date of the first day of the week
   return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 + correction_factor(Year))
 }
+```
 
+# Date to CDC date - function to convert date to CDC date
 
+```{r date_to_cdcdate, echo=TRUE}
+
+ date_to_cdcdate <- function(date) {
+  #force date to be a date
+  date <- as.Date(date)
+  year = year(date)
+  day = as.numeric(date - as.Date(paste0(year, "-01-01")))
+  #calculate number of days from the beginning of the year
+  week = as.integer(day/7) + 1
+  #calculate the week number
+  year_week = paste0(year, "-", week) 
+  #calculate the year-week
+  cdcdate = epiweek_to_date(year, week) 
+  diff = cdcdate -date
+  #calculate the difference between the date and the epiweek
+  week = ifelse(diff > 3, week - 1, week)
+  #adjust week number if the difference between the date and the epiweek is greater than 3
+  week = ifelse(diff < -3, week + 1, week) 
+  #adjust week number if the difference between the date and the epiweek is less than -3
+  cdcdate = epiweek_to_date(year, week)
+  #calculate the epiweek from the adjusted week number
+  #diff = epiweek - date 
+  #calculate the difference between the date and the epiweek
+  return(cdcdate)
+ }
+ 
+ 
 ```
 
 #import wastewater and deaths data
@@ -185,7 +214,9 @@ ww_fin_import <- #european weeks are one day ahead of US weeks. So (EU week - 1)
                             "Uncertainties", "Inflow", "viral_load_DNA", "viral_load_RNA")
     ) %>%
   select(date, viral_load_DNA, viral_load_RNA) %>%
-  mutate(date = ymd(date), location_name = "Finland")
+  mutate(date = ymd(date), location_name = "Finland", 
+         cdc_date = date_to_cdcdate(date)
+         )
 
 hosp_fin_import <- #hosp_new is new hospitalizations which is not found in OWID data
   read.csv(paste0(data_loc, "/", hosp_fin), sep = ";") %>%
@@ -199,8 +230,10 @@ hosp_fin_import <- #hosp_new is new hospitalizations which is not found in OWID 
   mutate(date = epiweek_to_date(Year, Week)) %>%
   group_by(date) %>% summarize(hosp_new = sum(val)) %>% 
   #pivot_wider(names_from = new, values_from = hosp, values_fill = 0) %>%
-  mutate(location_name = "Finland") %>%
-  select(date, location_name, hosp_new)  
+  mutate(location_name = "Finland",
+         cdc_date = date_to_cdcdate(date)
+         ) %>%
+  select(cdc_date, date, location_name, hosp_new)  
  # View(hosp_fin_import)
 
 ww_neth_import <- 
@@ -267,7 +300,9 @@ View(hosp_aus_import)
 ww_aus_hosp <- 
   left_join(ww_aus_import, hosp_aus_import, by = c("date", "location_name")) %>%
   select(date, location_name, cases_wkly, viral_load, icu_wkly, hosp_wkly) %>%
-  mutate( #calculate the 7 day average of viral load while imputing missing values using the average 
+  mutate( 
+    cdc_date = date_to_cdcdate(date),
+    #calculate the 7 day average of viral load while imputing missing values using the average 
     viral_load_prewkly = rollapplyr(viral_load, 7, sum, na.rm = TRUE, 
                                     fill = NA, align = "right"), 
     is_na_viral_load = is.na(viral_load),
@@ -288,7 +323,8 @@ ww_can_hosp <-
   mutate(viral_load_median_wkly = rollapplyr(viral_load_median, 7, sum, na.rm = TRUE, 
                                              fill = NA, align = "right"),
          viral_load_mean_wkly = rollapplyr(viral_load_mean, 7, sum, na.rm = TRUE, 
-                                           fill = NA, align = "right")
+                                           fill = NA, align = "right"),
+         cdc_date = date_to_cdcdate(date)
          )%>%
   arrange(date)
 
@@ -299,7 +335,20 @@ ww_dk_hosp <-
   arrange(date)
 
 
+ww_fin_hosp <-
+  full_join(ww_fin_import, hosp_fin_import, by = c("cdc_date", "location_name")) %>%
+  arrange(cdc_date) %>%
+  mutate(date = ifelse(is.na(date.x), date.y, date.x),
+         date = as.Date(date)) %>%
+  select(-date.x, date.y) #%>%
+  #calculate year from date
 
+  pivot_wider(names_from = viral_load_DNA, values_from = cdc_date, values_fill = NA)
+  #Should we be doing cdc_date for all weekly datasets?
+    
+
+ww_fin_import <- 
+hosp_fin_import <- 
   
 ```  
   
