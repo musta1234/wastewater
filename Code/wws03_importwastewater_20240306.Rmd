@@ -18,8 +18,11 @@ preq = c( "tidyverse","ggpmisc", "gridExtra", "ggfortify", "scales",
           "zoo", "prophet", "corrr", "broom", "usethis", "rvest", "data.table")
 #for (y in preq) install.packages(y, dep = TRUE)
 sapply(preq, library, character.only=T)
+# source functions from file in same directory as this script
+
 ```
 
+#global variables
 ```{r global_variables, echo=TRUE}
 
 #rm( list = ls())
@@ -28,6 +31,11 @@ file_loc <- paste0(getwd())
 data_loc <- paste0(file_loc, "/data_downloads/") # a location for data files 
 # check if the string contains "mustam23"
 work_laptop <- grepl("mustam23", getwd())
+
+#setwd(dirname(getwd()))
+source("Code/epiweek_to_date_function.R", chdir=T)
+
+
 ```
 
 ```{r import_bigfile, echo=TRUE}
@@ -61,19 +69,33 @@ ww_usa <- "United States 20240305 wastewater_surveillance_viral_activity_level_o
 hosp2_usa <- "data_table_for_currently_hospitalized_covid19_patients_-_the_united_states.csv"
 hosp_usa <- "data_table_for_weekly_covid19_hospital_admissions_-_the_united_states.csv"
 death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
+
 ```
 
-########### Function to convert epiweek to date
-```{r epiweek_to_date, echo=TRUE}
+```{r epiweek_to_date_function, echo=TRUE}
 
 # write a function with a single input year that returns a correction factor of -3 if the year is 2020, 2 if the year is 2021, 1 if the year is 2022, 0 if the year is 2023, -1 if the year is 2024
 correction_factor <- function(year) {
-  year <- as.integer(year)   #force year to be an integer
-  correction <- c(5, -3, 2, 1, 0, -1, -3)
-  names(correction) <- c(2019:2025) #edit this and above lines to expand vector beyond 2025
-  return(correction[year - 2019])
+  #force year to be an integer
+  year <- as.integer(year)
+  if (year == 2019) {
+    return(+5)
+  } else if (year == 2020) {
+    return(-3)
+  } else if (year == 2021) {
+    return(2)
+  } else if (year == 2022) {
+    return(1)
+  } else if (year == 2023) {
+    return(0)
+  } else if (year == 2024) {
+    return(-1)
+  } else if (year == 2025) {
+    return(-3)
+  } else {
+    return(NA)
+  }
 }
-
 
 epiweek_to_date <- function(Year = 2020, Week =1) {
   #force Year and Week to be integers
@@ -82,14 +104,22 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   #return the date of the first day of the week
   return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 + correction_factor(Year))
 }
+
+```
 ```
 
-# Date to CDC date - function to convert date to CDC date
 
-```{r date_to_cdcdate, echo=TRUE}
+```{ r date_tocdcdate_function, echo=TRUE}
+# Date to CDC date - function to convert date to CDC date
+# This function converts a date to a CDC date. CDC date the closest epiweek () 
+# begin date which is a Sunday is a date in the CDC's weekly surveillance reports. 
+# The function takes a date as input and returns the corresponding CDC date.
+# source https://ndc.services.cdc.gov/wp-content/uploads/2021/02/MMWR_Week_overview.pdf
+# https://www.cmmcp.org/mosquito-surveillance-data/pages/epi-week-calendars-2008-2024
+
 # need to think further about whether we want to add up forward or backward
 
- date_to_cdcdate <- function(date) {
+date_to_cdcdate <- function(date) {
   #force date to be a date
   date <- as.Date(date)
   year = year(date)
@@ -101,9 +131,9 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   #calculate the year-week
   cdcdate = epiweek_to_date(year, week) 
   diff = cdcdate -date
-  
-  # need to think further about whether we want to add up forward or backward
   #calculate the difference between the date and the epiweek
+  # need to think further about whether we want to add up forward or backward
+  
   week = ifelse(diff > 3, week - 1, week)
   #adjust week number if the difference between the date and the epiweek is greater than 3
   week = ifelse(diff < -3, week + 1, week) 
@@ -113,9 +143,8 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   #diff = epiweek - date 
   #calculate the difference between the date and the epiweek
   return(cdcdate)
- }
- 
- 
+}
+
 ```
 
 #import wastewater and deaths data

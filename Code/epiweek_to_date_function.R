@@ -5,7 +5,7 @@
 correction_factor <- function(year) {
   #force year to be an integer
   year <- as.integer(year)
-  if (year == 2019) {
+  if (year == 2019){
     return(+5)
   } else if (year == 2020) {
     return(-3)
@@ -24,20 +24,20 @@ correction_factor <- function(year) {
   }
 }
 
-epiweek_to_date <- function(Year = 2020, Week =1) {
+epiweek_to_date <- function(Year = 0, Week =0) {
   #force Year and Week to be integers
   Year <- as.integer(Year)
   Week <- as.integer(Week)
   #return the date of the first day of the week
-  return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 + correction_factor(Year))
+  return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 
+         + correction_factor(Year))
+  
 }
 
 
 
-# Date to CDC date - function to convert date to CDC date
-# This function converts a date to a CDC date. CDC date the closest epiweek () 
-# begin date which is a Sunday is a date in the CDC's weekly surveillance reports. 
-# The function takes a date as input and returns the corresponding CDC date.
+# Date to CDC date - function to convert date to CDC date (the closest epiweek ())
+# The function takes date as input and returns the corresponding CDC date.
 # source https://ndc.services.cdc.gov/wp-content/uploads/2021/02/MMWR_Week_overview.pdf
 # https://www.cmmcp.org/mosquito-surveillance-data/pages/epi-week-calendars-2008-2024
 
