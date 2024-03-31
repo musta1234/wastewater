@@ -1,8 +1,5 @@
-
-
-
 # write a function with a single input year that returns a correction factor of -3 if the year is 2020, 2 if the year is 2021, 1 if the year is 2022, 0 if the year is 2023, -1 if the year is 2024
-correction_factor <- function(year) {
+correction_factor2 <- function(year) {
   #force year to be an integer
   year <- as.integer(year)
   if (year == 2019){
@@ -24,6 +21,37 @@ correction_factor <- function(year) {
   }
 }
 
+correction_factor <- function(years) {
+  # Force years to be integers
+  years <- as.integer(years)
+  
+  # Initialize vector to store results
+  factors <- numeric(length(years))
+  
+  for (i in seq_along(years)) {
+    year <- years[i]
+    if (year == 2019){
+      factors[i] <- +5
+    } else if (year == 2020) {
+      factors[i] <- -3
+    } else if (year == 2021) {
+      factors[i] <- 2
+    } else if (year == 2022) {
+      factors[i] <- 1
+    } else if (year == 2023) {
+      factors[i] <- 0
+    } else if (year == 2024) {
+      factors[i] <- -1
+    } else if (year == 2025) {
+      factors[i] <- -3
+    } else {
+      factors[i] <- NA
+    }
+  }
+  
+  return(factors)
+}
+
 epiweek_to_date <- function(Year = 0, Week =0) {
   #force Year and Week to be integers
   Year <- as.integer(Year)
@@ -33,7 +61,6 @@ epiweek_to_date <- function(Year = 0, Week =0) {
          + correction_factor(Year))
   
 }
-
 
 
 # Date to CDC date - function to convert date to CDC date (the closest epiweek ())
@@ -68,5 +95,4 @@ date_to_cdcdate <- function(date) {
   #calculate the difference between the date and the epiweek
   return(cdcdate)
 }
-
 
