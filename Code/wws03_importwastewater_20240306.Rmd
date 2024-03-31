@@ -87,6 +87,7 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
 # Date to CDC date - function to convert date to CDC date
 
 ```{r date_to_cdcdate, echo=TRUE}
+# need to think further about whether we want to add up forward or backward
 
  date_to_cdcdate <- function(date) {
   #force date to be a date
@@ -100,6 +101,8 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   #calculate the year-week
   cdcdate = epiweek_to_date(year, week) 
   diff = cdcdate -date
+  
+  # need to think further about whether we want to add up forward or backward
   #calculate the difference between the date and the epiweek
   week = ifelse(diff > 3, week - 1, week)
   #adjust week number if the difference between the date and the epiweek is greater than 3

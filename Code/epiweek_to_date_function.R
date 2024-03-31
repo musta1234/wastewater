@@ -32,5 +32,41 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
   return(as.Date(paste0(as.character(Year), "-01-01")) + 7 * as.integer(Week) - 1 + correction_factor(Year))
 }
 
-#test the function
+
+
+# Date to CDC date - function to convert date to CDC date
+# This function converts a date to a CDC date. CDC date the closest epiweek () 
+# begin date which is a Sunday is a date in the CDC's weekly surveillance reports. 
+# The function takes a date as input and returns the corresponding CDC date.
+# source https://ndc.services.cdc.gov/wp-content/uploads/2021/02/MMWR_Week_overview.pdf
+# https://www.cmmcp.org/mosquito-surveillance-data/pages/epi-week-calendars-2008-2024
+
+# need to think further about whether we want to add up forward or backward
+
+date_to_cdcdate <- function(date) {
+  #force date to be a date
+  date <- as.Date(date)
+  year = year(date)
+  day = as.numeric(date - as.Date(paste0(year, "-01-01")))
+  #calculate number of days from the beginning of the year
+  week = as.integer(day/7) + 1
+  #calculate the week number
+  year_week = paste0(year, "-", week) 
+  #calculate the year-week
+  cdcdate = epiweek_to_date(year, week) 
+  diff = cdcdate -date
+  #calculate the difference between the date and the epiweek
+  # need to think further about whether we want to add up forward or backward
+  
+  week = ifelse(diff > 3, week - 1, week)
+  #adjust week number if the difference between the date and the epiweek is greater than 3
+  week = ifelse(diff < -3, week + 1, week) 
+  #adjust week number if the difference between the date and the epiweek is less than -3
+  cdcdate = epiweek_to_date(year, week)
+  #calculate the epiweek from the adjusted week number
+  #diff = epiweek - date 
+  #calculate the difference between the date and the epiweek
+  return(cdcdate)
+}
+
 
