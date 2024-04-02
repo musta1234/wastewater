@@ -106,10 +106,7 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
 }
 
 ```
-```
-
-
-```{ r date_tocdcdate_function, echo=TRUE}
+```{r date_tocdcdate_function, echo=TRUE}
 # Date to CDC date - function to convert date to CDC date
 # This function converts a date to a CDC date. CDC date the closest epiweek () 
 # begin date which is a Sunday is a date in the CDC's weekly surveillance reports. 
@@ -118,7 +115,7 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
 # https://www.cmmcp.org/mosquito-surveillance-data/pages/epi-week-calendars-2008-2024
 
 # need to think further about whether we want to add up forward or backward
-
+# epiweek() probably works better here
 date_to_cdcdate <- function(date) {
   #force date to be a date
   date <- as.Date(date)
@@ -247,8 +244,11 @@ ww_fin_import <- #european weeks are one day ahead of US weeks. So (EU week - 1)
     ) %>%
   select(date, viral_load_DNA, viral_load_RNA) %>%
   mutate(date = ymd(date), location_name = "Finland", 
-         cdc_date = date_to_cdcdate(date)
-         )
+         #cdc_date= epiweek_to_date(Year = year(date), Week = epiweek(date)),
+         #diff = date - cdc_date,
+         epi_week = epiweek(date),
+         year = year(date)
+         ) 
 
 hosp_fin_import <- #hosp_new is new hospitalizations which is not found in OWID data
   read.csv(paste0(data_loc, "/", hosp_fin), sep = ";") %>%
@@ -263,9 +263,11 @@ hosp_fin_import <- #hosp_new is new hospitalizations which is not found in OWID 
   group_by(date) %>% summarize(hosp_new = sum(val)) %>% 
   #pivot_wider(names_from = new, values_from = hosp, values_fill = 0) %>%
   mutate(location_name = "Finland",
-         cdc_date = date_to_cdcdate(date)
+         #cdc_date = date_to_cdcdate(date)
+         epi_week = Week,
+         year = Year
          ) %>%
-  select(cdc_date, date, location_name, hosp_new)  
+  select(date, year, epi_week, location_name, hosp_new)  
  # View(hosp_fin_import)
 
 ww_neth_import <- 
@@ -325,9 +327,7 @@ death_usa_import <-
 ```
 
 ```{r merge_ww_hosp, echo=TRUE}
-View(ww_aus_import) 
-View(hosp_aus_import)  
-  
+
 #merge wastewater with hospitalization data for each country
 ww_aus_hosp <- 
   left_join(ww_aus_import, hosp_aus_import, by = c("date", "location_name")) %>%
@@ -375,10 +375,10 @@ ww_fin_hosp <-
   select(-date.x, date.y) #%>%
   #calculate year from date
 
-  pivot_wider(names_from = viral_load_DNA, values_from = cdc_date, values_fill = NA)
+  #pivot_wider(names_from = viral_load_DNA, values_from = cdc_date, values_fill = NA)
   #Should we be doing cdc_date for all weekly datasets?
     
-
+```
 ww_fin_import <- 
 hosp_fin_import <- 
   
