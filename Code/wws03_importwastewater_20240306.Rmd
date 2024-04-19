@@ -23,7 +23,7 @@ sapply(preq, library, character.only=T)
 ```
 
 #global variables
-```{r setup, echo=TRUE}
+```{r setup_2, echo=TRUE}
 getwd()
 #rm( list = ls())
 #file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/wastewater/"
@@ -75,8 +75,14 @@ hosp_usa <- "data_table_for_weekly_covid19_hospital_admissions_-_the_united_stat
 death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
 
 ```
-
+#functions
 ```{r epiweek_to_date_function, echo=TRUE}
+
+next_saturday <- function(date){
+  date + 7 - match(weekdays(date), 
+                   c("Sunday", "Monday","Tuesday","Wednesday",
+                     "Thursday","Friday", "Saturday"))
+}
 
 # write a function with a single input year that returns a correction factor of -3 if the year is 2020, 2 if the year is 2021, 1 if the year is 2022, 0 if the year is 2023, -1 if the year is 2024
 
@@ -144,14 +150,9 @@ epiweek_to_date <- function(Year = 2020, Week =1) {
 
 ```
 ```{r date_tocdcdate_function, echo=TRUE}
-# Date to CDC date - function to convert date to CDC date
-# This function converts a date to a CDC date. CDC date the closest epiweek  
-# The function takes a date as input and returns the corresponding CDC date.
-# source https://ndc.services.cdc.gov/wp-content/uploads/2021/02/MMWR_Week_overview.pdf
-# https://www.cmmcp.org/mosquito-surveillance-data/pages/epi-week-calendars-2008-2024
+# The function takes a date as input and returns the corresponding CDC datethe closest epiweek. source https://ndc.services.cdc.gov/wp-content/uploads/2021/02/MMWR_Week_overview.pdf
+# next_saturday() probably works better here
 
-# need to think further about whether we want to add up forward or backward
-# epiweek() probably works better here
 date_to_cdcdate <- function(date) {
   #force date to be a date
   date <- as.Date(date)
@@ -244,10 +245,14 @@ ww_dk_import <-
   read.csv(paste0(data_loc, "/", ww_dk)) %>%
   mutate(date = ymd(date), location_name = "Denmark") %>%
   rename(viral_load = rna_mean_faeces, notes = lab) %>%
-  select(date, location_name, viral_load, notes)
+  select(date, location_name, viral_load, notes) %>%
+  mutate(weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
 
 cases_den_import <-   #hospitalization variable does not match OWID data
-  read.csv(paste0(data_loc, "/", cases_den), sep = ";") %>%
+  read.csv(paste0(data_loc, "/", cases_den), sep = ";",
+           check.names = FALSE) %>%
   #hack to rename all variables using a vector
   rename_with(
     ~ c("Region_code", "Region", "Sampling_date", "Sex", "Total_cases", 
@@ -262,10 +267,13 @@ cases_den_import <-   #hospitalization variable does not match OWID data
          cases_wkly = rollapplyr(cases, 7, sum, fill = NA, align = "right"), 
          deaths_wkly = rollapplyr(deaths, 7, sum, fill = NA, align = "right"),
          hosp_alt_wkly = rollapplyr(hosp_alt, 7, sum, fill = NA, align = "right")
-         )
+         ) %>%
+  mutate(weekday = weekdays(date),
+         next_saturday = next_saturday(date))
 
 hosp_den_import <-   #hosp_new matches new hospitalizations in OWID data
-  read.csv(paste0(data_loc, "/", hosp_den), sep = ";") %>%
+  read.csv(paste0(data_loc, "/", hosp_den), sep = ";",
+           check.names = FALSE) %>%
   rename_with(
     ~ c("Region_code", "region", "date", "new_admissions", "timestamp")
     ) %>%
@@ -274,7 +282,10 @@ hosp_den_import <-   #hosp_new matches new hospitalizations in OWID data
   summarize(hosp_new = sum(new_admissions)) %>%
   #hosp_new matches new hospitalizations in OWID data
   mutate(location_name = "Denmark",
-         hosp_new_wkly = rollapplyr(hosp_new, 7, sum, fill = NA, align = "right"))
+         hosp_new_wkly = rollapplyr(hosp_new, 7, sum, fill = NA, align = "right"),
+         weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
 
 #cases2_den_import <- read.csv(paste0(data_loc, "/", cases2_den))
 
@@ -385,7 +396,7 @@ death_usa_import <-
   mutate(date = mdy(date), deaths = as.numeric(deaths))
 
 ```
-
+#merge wastewater and hospitalization data
 ```{r merge_ww_hosp, echo=TRUE}
 
 #merge wastewater with hospitalization data for each country
@@ -393,7 +404,7 @@ ww_aus_hosp <-
   left_join(ww_aus_import, hosp_aus_import, by = c("date", "location_name")) %>%
   select(date, location_name, cases_wkly, viral_load, icu_wkly, hosp_wkly) %>%
   mutate( 
-    cdc_date = date_to_cdcdate(date),
+    #cdc_date = date_to_cdcdate(date),
     #calculate the 7 day average of viral load while imputing missing values using the average 
     viral_load_prewkly = rollapplyr(viral_load, 7, sum, na.rm = TRUE, 
                                     fill = NA, align = "right"), 
@@ -416,7 +427,7 @@ ww_can_hosp <-
                                              fill = NA, align = "right"),
          viral_load_mean_wkly = rollapplyr(viral_load_mean, 7, sum, na.rm = TRUE, 
                                            fill = NA, align = "right"),
-         cdc_date = date_to_cdcdate(date)
+         #cdc_date = date_to_cdcdate(date)
          )%>%
   arrange(date)
 
