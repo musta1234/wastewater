@@ -27,7 +27,8 @@ https://health-infobase.canada.ca/covid-19/#a2
 
 ############ Denmark
 https://experience.arcgis.com/experience/220fef27d07d438889d651cc2e00076c/page/Covid-19-Regionalt/
-
+https://experience.arcgis.com/template/099eb5c9acea4e18b411997815be2f98
+#from this page you download zip file containing 20 files
 
 ############ Finland
 https://www.thl.fi/episeuranta/jatevesi/wastewater_weekly_report.html
