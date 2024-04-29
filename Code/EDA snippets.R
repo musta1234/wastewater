@@ -121,8 +121,11 @@ head(ww_dk_import)
 
 
     
-    
-
+bigfile %>% 
+  group_by(location_name) %>% 
+  summarize(mindate = min(date), 
+            maxdate = max(date)) %>%
+  View()
     "hosp_usa",
     "hosp_usa_import_new",
     "hosp2_usa",

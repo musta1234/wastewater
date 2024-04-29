@@ -48,7 +48,7 @@ bigfile <- read.csv(paste0(data_loc, "/bigfile.csv"))
     #select all date columns and convert them to date
     selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
     bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
-    bigfile_usa_den <- 
+bigfile_usa_den <- 
       bigfile %>% 
       filter(location_name %in% c("United States", "Denmark")) %>%
       mutate(weekday = weekdays(date), next_saturday = next_saturday(date),
@@ -261,7 +261,6 @@ death_usa_import <-
             count = n())
 
 ```
-```
 
 #merge wastewater and hospitalization data
 ```{r merge_ww_hosp, echo=TRUE}
@@ -269,20 +268,19 @@ death_usa_import <-
 ww_dk_hosp <-
   full_join(ww_dk_import, hosp_den_import, by = c("date", "location_name")) %>%
   full_join(., cases_den_import, by = c("date", "location_name")) %>%
+  full_join(., bigfile_usa_den %>% ungroup() %>% filter(location_name == "Denmark"), 
+            by = c("date", "location_name")) %>%
   arrange(date)
 
 ```
-
 ```{r merge_ww_hosp2, echo=TRUE}
 #merge wastewater and hosp data for USA
 ww_usa_hosp <-
   full_join(ww_usa_import, hosp2_usa_import_current, by = c("date", "location_name")) %>%
   full_join(., hosp_usa_import_new, by = c("date", "location_name")) %>%
   full_join(., death_usa_import, by = c("date", "location_name")) %>%
+  full_join(., bigfile_usa_den %>% ungroup() %>% filter(location_name == "United States"), by = c("date", "location_name")) %>%
   arrange(date)
-
-
-
 
 ```
 
