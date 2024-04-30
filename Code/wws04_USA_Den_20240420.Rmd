@@ -270,9 +270,24 @@ ww_dk_hosp <-
   full_join(., cases_den_import, by = c("date", "location_name")) %>%
   full_join(., bigfile_usa_den %>% ungroup() %>% filter(location_name == "Denmark"), 
             by = c("date", "location_name")) %>%
-  arrange(date)
+  arrange(date) %>%
+  select(date, location_name, viral_load, hosp_new, hosp_new_wkly, cases, inf_mean, daily_cases, variant, subvariant) %>%
+  
+  mutate( subvariant = case_when(date >= as.Date("2023-02-27") &
+                                date < as.Date("2023-11-20") ~ "XBB", 
+                              date >= as.Date("2023-11-20") ~ "JN.1",
+                              TRUE ~ subvariant)) 
+
+
+#%>% View()
+  #Den BA45/ends BQ.1 begins Nov 21 2022
+  #Den BQ.1 never reached 4 weeks prevalence
+  #Den XBB start Feb  27, 2023
+  #Den JN.1 start November 20, 2023
 
 ```
+#ba1 = case_when(
+#  ((date >= start_BA.1) & (date < end_BA.1)) ~ 1, .default = 0),
 ```{r merge_ww_hosp2, echo=TRUE}
 #merge wastewater and hosp data for USA
 ww_usa_hosp <-
