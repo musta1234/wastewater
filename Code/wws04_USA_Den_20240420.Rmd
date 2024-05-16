@@ -75,6 +75,9 @@ hosp2_usa <- "data_table_for_currently_hospitalized_covid19_patients_-_the_unite
 hosp_usa <- "data_table_for_weekly_covid19_hospital_admissions_-_the_united_states.csv"
 death_usa <- "data_table_for_weekly_deaths__the_united_states.csv"
 
+
+ww_neth <- "Netherlands_download_weekly_ww.tab"
+
 ```
 #functions next_saturday, epiweek_to_date
 ```{r epiweek_to_date_function, echo=TRUE}
@@ -249,6 +252,48 @@ death_usa_import <-
   mutate(date = mdy(date), deaths = as.numeric(deaths), 
          weekday = weekdays(date),
          next_saturday = next_saturday(date))
+
+#import Netherlands data from ww_neth
+ww_neth_import <- 
+  read.delim(paste0(data_loc, "/", ww_neth) 
+             ) %>%
+  mutate(date = epiweek_to_date(Year, Week),
+         location_name = "Netherlands",
+         weekday= weekdays(date)) %>%
+  rename(viral_load = WW) %>%
+  select(date, location_name, viral_load, weekday) %>%
+  filter(!is.na(viral_load))
+
+hosp_neth_import <- 
+  # take OWID dataset and filter for Netherlands and hospitalizations
+  owid %>%
+  rename(owid_date = date) %>% # renaming this to keep tabs on original date from owid
+  filter(location_name == "Netherlands" &
+           grepl("Weekly new", indicator)) %>%
+  arrange(indicator, owid_date) %>%
+  #for each date, calculate the next saturday and how many days until next saturday
+  mutate(
+    next_saturday = next_saturday(owid_date),
+    until_saturday = next_saturday - owid_date
+    ) %>%
+  #group by indicator and next saturday
+  group_by(indicator, next_saturday) %>%
+  #for each group, calculate the maximum date, which is the most recent date we have data for that week
+  mutate(max_date = max(owid_date),
+         indicator = gsub(" ", "_", indicator)) %>%
+  #filter for the rows where the date is the maximum date, which is the most recent date we have data for that week
+  filter(max_date == owid_date) %>% 
+  rename(date = next_saturday) %>%
+  select(indicator, location_name,owid_date, date, value, weekday) %>% ungroup() %>%
+  #create columns for weekly new hospitalizations and weekly new hospitalizations per million
+  pivot_wider(names_from = indicator, values_from = value) %>%
+  rename(
+    hosp_new = Weekly_new_hospital_admissions,
+    hosp_new_permill = Weekly_new_hospital_admissions_per_million
+  )
+
+
+
 ```
 
 #summarize everything

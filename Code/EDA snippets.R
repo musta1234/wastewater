@@ -126,28 +126,3 @@ bigfile %>%
   summarize(mindate = min(date), 
             maxdate = max(date)) %>%
   View()
-    "hosp_usa",
-    "hosp_usa_import_new",
-    "hosp2_usa",
-    "hosp2_usa_import_current",
-    
-
-    "ww_dk_hosp",
-    "ww_dk_import",
-    
-    "ww_usa",
-    "ww_usa_import"
-    "death_usa",
-    "death_usa_import",
-    
-    [7] "date_to_cdcdate"          "death_usa"               
-    [9] "death_usa_import"         "epiweek_to_date"         
-    [11] "file_loc"                 "hosp_den"                
-    [13] "hosp_den_import"          "hosp_usa"                
-    [15] "hosp_usa_import_new"      "hosp2_usa"               
-    [17] "hosp2_usa_import_current" "min_max_n"               
-    [19] "next_saturday"            "owid"                    
-    [21] "preq"                     "selected_columns"        
-    [23] "work_laptop"              "ww_dk"                   
-    [25] "ww_dk_hosp"               "ww_dk_import"            
-    [27] "ww_usa"                   "ww_usa_import" 
