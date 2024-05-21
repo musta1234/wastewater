@@ -313,7 +313,7 @@ hosp_neth_import <-
 ww_dk_hosp <-
   full_join(ww_dk_import, hosp_den_import, by = c("date", "location_name")) %>%
   full_join(., cases_den_import, by = c("date", "location_name")) %>%
-  full_join(., bigfile_usa_den %>% ungroup() %>% filter(location_name == "Denmark"), 
+  full_join(., bigfile %>% ungroup() %>% filter(location_name == "Denmark"), 
             by = c("date", "location_name")) %>%
   arrange(date) %>%
   select(date, location_name, viral_load, hosp_new, hosp_new_wkly, cases, inf_mean, daily_cases, variant, subvariant) %>%
@@ -322,6 +322,9 @@ ww_dk_hosp <-
                                 date < as.Date("2023-11-20") ~ "XBB", 
                               date >= as.Date("2023-11-20") ~ "JN.1",
                               TRUE ~ subvariant),
+          variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             ),
           inf_mean_7dts = 
            rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
           daily_cases_7dts = 
@@ -330,7 +333,7 @@ ww_dk_hosp <-
            rollapplyr(cases, 7, sum, fill = NA, align = "right")
           ) 
 
-
+den_dataset <- ww_dk_hosp
 #%>% View()
   #Den BA45/ends BQ.1 begins Nov 21 2022
   #Den BQ.1 never reached 4 weeks prevalence
@@ -365,8 +368,40 @@ usa_dataset <-
                                 date >= as.Date("2023-01-16") &
                                 date < as.Date("2023-12-18") ~ "XBB", 
                                 date >= as.Date("2023-12-18") ~ "JN.1",
-                                TRUE ~ subvariant))
+                                TRUE ~ subvariant),
+                  variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             ))
 
+
+
+neth_dataset <- 
+  bigfile %>% 
+  filter(location_name == "Netherlands") %>%
+  select(date, location_name, inf_mean, daily_cases, variant, subvariant) %>%
+  mutate(inf_mean_7dts = 
+           rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
+         daily_cases_7dts = 
+           rollapplyr(daily_cases, 7, sum, fill = NA, align = "right")
+         ) %>%
+  full_join( . , hosp_neth_import, by = c("date", "location_name")) %>%
+  full_join( . , ww_neth_import, by = c("date", "location_name")) %>%
+  arrange(date) %>%
+  #Netherlands Dates from Covariants.org as of 2024-05-16
+  mutate(subvariant = case_when(date >= as.Date("2022-12-05") &
+                                date < as.Date("2023-11-20") ~ "XBB", 
+                                date >= as.Date("2023-11-20") ~ "JN.1",
+                                TRUE ~ subvariant),
+         variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             ))
+
+
+```
+
+```{r merge_ww_hosp2, echo=TRUE}
+#ww_neth_import <- 
+#hosp_neth_import <- 
 
 #US BQ.1 begins Nov 21 2022
 #US XBB start January 16, 2023
