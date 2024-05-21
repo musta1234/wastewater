@@ -1,0 +1,121 @@
+Calculation figures Sewage measurements COVID-19
+In collaboration with the water boards, Statistics Netherlands has the number of affiliated residents per
+Sewage treatment plant (WWTP) mapped. The number of inhabitants per location for 2022
+can be found in the following table of Statistics Netherlands (the version for 2021 can be found here). Because there
+During these years have been changes in a few measuring locations, the population of inhabitants apply
+For a certain period, indicated by a start and end date in the Tabelle
+
+Also stands in
+This table per location and per period of the ratio from which safety regions and municipalities
+The sewage is from. This enables the RIVM to do the number of virus particles per 100,000
+to calculate residents and attribute them in the right proportions to connected
+Safety regions and municipalities. (*)
+
+
+Municipal figures:
+The calculation takes place at municipal level based on weekly averages. As above
+described, the measurement points of individual locations are weighed to the number of connected
+Residents per municipality in the calculation of the averages.
+
+Weekly average municipal level:
+The weekly average is calculated by first per WWTP the average of all measured values
+to calculate in that week. After that, the weekly average is calculated at municipal level
+About all corresponding measuring locations. The averages are weighed per measuring locations
+To the amount of people in the municipalities who discharge at the relevant measuring locations (**). The
+Weeks walk from Monday to Sunday. The average for the last week is calculated on
+the following
+The average for the last week is calculated on
+The following Tuesday. If there is no measurement for a location in a certain week
+Being known, then it is not included in the calculation.
+
+Description method:
+- multiply the number of affiliated residents with the share per location at the
+Municipality hears (**). We now call this the value (x) of the location.
+- Share the weekly average per location by 100,000.
+- multiply this by (x).
+- summon all these values of the locations in question.
+- Share this by the summarized total of all (x) values of the locations in question.
+- Multiply the end result by 100,000.
+
+
+National and safety regions:
+At national and safety region level, average daily values based on the last
+Well -known values of the WWTPs calculated. The measurement points of individual locations are
+weighted to the number of affiliated residents in the calculation of the averages.
+A last known value on a day X is determined by the most recent per measuring location
+measurement, viewed from (and inclusive) day X. As a measurement more than 8 days before day
+X is, then Ti counts
+
+If a measurement more than 8 days before day
+X is, then that value and location does not count in the calculation of the day average.
+Description Method National Day averages:
+- Share the last known value per location by 100,000.
+- Multiply this by the number of affiliated residents per location. (***)
+- Summarize all these values of the different locations.
+- Share this by the sum of all affiliated residents of the locations.
+- Multiply the end result by 100,000.
+
+Note: it can happen that measurement values will be made at a later time
+Made from previous days, from last week, or even the weeks before. That is why it becomes
+Open data file daily. The day and weekly averages are hereby
+recalculated. Any corrections will be made in previous weeks. The
+measured values per individual location are in the graph on the Corona dashboard on the date
+on which the measurement was performed. On the Corona Dashboard
+
+The
+measured values per individual location are in the graph on the Corona dashboard on the date
+on which the measurement was performed. On the Corona Dashboard, day averages are shown to
+and on the day on which the most recent virus freight is reported in the open data of the
+RIVM.
+
+(*) De CBS 2021 tabel is (met terugwerkende kracht) toegepast op de metingen die gedaan zijn in 
+2020. In de week van 5 oktober is RWZI Aalst door RWZI Zaltbommel overgenomen, en in de 
+week van 7 december is RWZI Lienden door RWZI Tiel overgenomen. Hierdoor wordt vóór deze 
+weken met een verlaagd inwonersaantal gerekend voor locatie Zaltbommel en Tiel. Deze 
+aantallen, en die van Aalst en Lienden, zijn te vinden in de 2020 versie van de tabel van het CBS.
+
+(**) In the calculation at municipal level, the number of affiliated residents for a location
+and the share of the municipality in the location determined by the first Monday of the week
+take for which the weekly average is determined.
+
+(***) In the calculation at the national and safety region level, the number is connected
+residents for a location and share of the safety region in the location determined by the day
+on which it was last measured.
+
+Extensive calculation example for 2021:
+The municipality of Gorinchem is affiliated with WWTP Gorinchem and WWTP Schelluinen. These
+18680 and 44862 affiliated residents respectively. We get the following from the CBS table
+Information: The municipality of Gorinchem uses 83.30% and 48.70% of the respectively
+capacity of these installations. The number of inhabitants per municipality per WWTP, the aforementioned
+Number "X", is for these locations:
+
+X - WWTP Gorinchem: .8330 * 18680 = 15560
+X - WWTWI Schelluinen: .4870 * 44862 = 21848
+(Apart from completion differences).
+For the calculation at municipal level in, for example, week 40, we are now taking the
+weekly average virus freight value at WWTP Gorinchem, which consists of 3 measurements, of 4, 5 and
+October 10. This average comes out on (rounded) 1,56383E+13 virus particles per 100,000
+inhabitants. For Schelluinen, the weekly average is 2,25259e+13 virus particles per 100,000
+inhabitants. We share these figures
+
+We divide these figures by 100,000 to end up on the virus freight per person.
+By multiplying this weekly average virus freight per person by their respective
+Number "X", the number of inhabitants per municipality per WWTP, we get:
+WWTP Gorinchem: 1,56383E+9 * 15560 = 2,43331E+12 virus particles
+WWTP Schelluinen: 2,25259e+9 * 21848 = 4,92147e+12 virus particles
+
+We count these values together and then we divide through the total number of people
+Connected is:
+(2,43331E+12+4.92147E+12) / (15560+21848) = 1.97E+8 virus particles per person
+This is the number of virus particles per person in the municipality of Gorinchem.
+We then multiply this by 100,000, to come out on
+1.97th+13 virus particles per 100,000 inhabitants,
+The number stated on the dashboard.
+
+(Note: In case there were no measurement of one of the WWTPs in the week, then
+the inhabitants of that WWTP are also not included in the calculation. In the above
+case, in the absence of WWTP Schelluinen, the calculation would be 1.56th+13
+virus particles per 100,000 inhabitants, equal to the weekly average of WWTP Gorinchem)
+
+
+Netherland wastewater methodology translation.txt
