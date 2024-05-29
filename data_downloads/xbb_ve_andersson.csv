@@ -1,0 +1,7 @@
+outcome,variant,ve,lower,upper
+Death,Overall,78,69,87
+Death,XBB,88,80,95
+Death,JN.1,78,71,84
+Hospitalization,Overall,61,46,75
+Hospitalization,XBB,74,60,87
+Hospitalization,JN.1,57,43,70

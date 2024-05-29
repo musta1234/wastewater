@@ -1,0 +1,8 @@
+outcome,variant,interval,ve,lower,upper
+Hospitalization,XBB,<60 days,74,49,87
+Hospitalization,JN.1,<60 days,50,15,71
+Hospitalization,JN.1,>=60 days,57,30,73
+ED/UC visit,XBB,<60 days,59,48,68
+ED/UC visit,XBB,>=60 days,39,10,59
+ED/UC visit,JN.1,<60 days,52,39,61
+ED/UC visit,JN.1,>=60 days,34,22,44

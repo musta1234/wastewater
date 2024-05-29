@@ -333,7 +333,20 @@ ww_dk_hosp <-
            rollapplyr(cases, 7, sum, fill = NA, align = "right")
           ) 
 
-den_dataset <- ww_dk_hosp
+den_dataset <- ww_dk_hosp %>%
+    mutate(
+    log_viral_load = log(viral_load),
+    lead1_viral_load = lead(viral_load, n = 1),
+    lead2_viral_load = lead(viral_load, n = 2),
+    lead3_viral_load = lead(viral_load, n = 3),
+    lead4_viral_load = lead(viral_load, n = 4),
+    lag1_viral_load = lag(viral_load, n = 1),
+    lag2_viral_load = lag(viral_load, n = 2),
+    lag3_viral_load = lag(viral_load, n = 3),
+    lag4_viral_load = lag(viral_load, n = 4)
+    )
+
+
 #%>% View()
   #Den BA45/ends BQ.1 begins Nov 21 2022
   #Den BQ.1 never reached 4 weeks prevalence
@@ -371,8 +384,18 @@ usa_dataset <-
                                 TRUE ~ subvariant),
                   variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
                              TRUE ~ variant
-                             ))
-
+                             )) %>%
+    mutate(
+      log_viral_load = log(viral_load),
+      lead1_viral_load = lead(viral_load, n = 1),
+      lead2_viral_load = lead(viral_load, n = 2),
+      lead3_viral_load = lead(viral_load, n = 3),
+      lead4_viral_load = lead(viral_load, n = 4),
+      lag1_viral_load = lag(viral_load, n = 1),
+      lag2_viral_load = lag(viral_load, n = 2),
+      lag3_viral_load = lag(viral_load, n = 3),
+      lag4_viral_load = lag(viral_load, n = 4)
+    )
 
 
 neth_dataset <- 
@@ -394,7 +417,19 @@ neth_dataset <-
                                 TRUE ~ subvariant),
          variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
                              TRUE ~ variant
-                             ))
+                             )) %>%
+  mutate(
+    log_viral_load = log(viral_load),
+    lead1_viral_load = lead(viral_load, n = 1),
+    lead2_viral_load = lead(viral_load, n = 2),
+    lead3_viral_load = lead(viral_load, n = 3),
+    lead4_viral_load = lead(viral_load, n = 4),
+    lag1_viral_load = lag(viral_load, n = 1),
+    lag2_viral_load = lag(viral_load, n = 2),
+    lag3_viral_load = lag(viral_load, n = 3),
+    lag4_viral_load = lag(viral_load, n = 4)
+  )
+
 
 
 ```

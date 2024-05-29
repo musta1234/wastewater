@@ -3,6 +3,7 @@
 
 library(tidyverse)
 
+
 # Function to calculate correlation matrix for each group
 calc_cor <- function(df) {
   cor(df %>% select_if(is.numeric), use = "pairwise.complete.obs")
@@ -22,8 +23,8 @@ fxn_correlations <-
       filter({{ group_var }} != "" & !is.na({{ group_var }})) %>%
       mutate(my_var = names(data %>% select_if(is.numeric))) %>%
       relocate(., my_var, .after = {{ group_var }})
-      
-    }
+    
+  }
 
 
 usa_variant_cor <-  
@@ -62,34 +63,43 @@ usa_cor <-
   rename( var = 1)
 
 neth_cor <-  
-  usa_dataset %>% select_if(is.numeric) %>% correlate() %>% 
+  neth_dataset %>% select_if(is.numeric) %>% correlate() %>% 
   mutate(location_name = "Netherlands") %>%
   rename( var = 1)
 
 den_cor <-  
-  usa_dataset %>% select_if(is.numeric) %>% correlate() %>% 
+  den_dataset %>% select_if(is.numeric) %>% correlate() %>% 
   mutate(location_name = "Denmark") %>%
   rename( var = 1)
 
 # Combine correlation matrices into a single data frame
 dataframes <- list(
-  usa_cor = usa_cor,
-  neth_cor = neth_cor,
-  den_cor = den_cor,
-  usa_variant_cor = usa_variant_cor,
-  usa_subvariant_cor = usa_subvariant_cor,
-  neth_variant_cor = neth_variant_cor,
-  neth_subvariant_cor = neth_subvariant_cor,
-  den_variant_cor = den_variant_cor,
-  den_subvariant_cor = den_subvariant_cor
+  usa_cor_leadlag = usa_cor,
+  neth_cor_leadlag = neth_cor,
+  den_cor_leadlag = den_cor,
+  usa_variant_cor_leadlag = usa_variant_cor,
+  usa_subvariant_cor_leadlag = usa_subvariant_cor,
+  neth_variant_cor_leadlag = neth_variant_cor,
+  neth_subvariant_cor_leadlag = neth_subvariant_cor,
+  den_variant_cor_leadlag = den_variant_cor,
+  den_subvariant_cor_leadlag = den_subvariant_cor
 )
 
 lapply(names(dataframes), function(name) {
   write.csv(dataframes[[name]], 
-            file = paste0(getwd(), "/output/cor/" ,paste0(name), 
+            file = paste0(getwd(), "/output/leadlag/" ,paste0(name), "_",
                           paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
             quote = TRUE,
             na = "",
             row.names = FALSE)
 })
+
+# Add rolling correlation as a new column
+#sample_data <- sample_data %>%
+#  mutate(RollingCorrelation = calculate_rolling_correlation(Var1, Var2, 20))
+
+
+    
+         
+         
 

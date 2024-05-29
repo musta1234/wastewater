@@ -202,7 +202,7 @@ den_viral_cases
 
 #############################################
 
-####################den_viral_cases#########################
+####################Netherlands#########################
 
 df <- neth_dataset %>% 
   filter(!is.na(viral_load) & !is.na(inf_mean_7dts)) #%>%
@@ -254,7 +254,7 @@ x <-
 x
 
 
-
+################################################################
 
 df <- neth_dataset %>% 
   filter(!is.na(viral_load) & !is.na(daily_cases_7dts)) #%>%
@@ -280,6 +280,61 @@ x <-
 
 x
 
-##Denmark
-#viral_load vs (hosp_new_wkly, cases, inf_mean_7dts, daily_cases_7dts)
+################################################################
+
+
+#####################neth_hospnew###########################################
+
+
+df <- neth_dataset %>% 
+  filter(!is.na(hosp_new) & !is.na(inf_mean_7dts)) #%>%
+#select(date, var1, var2) %>%
+coeff = max(df$hosp_new)/max(df$inf_mean_7dts)
+
+x <-
+  ggplot(
+    df, 
+    aes(x=date)) +
+  geom_line(aes(y=hosp_new), color = "blue3") +
+  geom_line(aes(y=inf_mean_7dts*coeff), color = "red2")+
+  
+  scale_y_continuous(
+    # Features of the first axis
+    name = "New Covid Hospitalizations (blue)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./coeff, name="Estimated Infections (red)", labels = comma),
+    labels = comma
+  ) +
+  #ggtitle("New Covid Hospitalizations vs Reported Weekly Infections, Denmark") +
+  labs(x = "Date")
+
+x
+
+################################################################
+
+df <- neth_dataset %>% 
+  filter(!is.na(hosp_new) & !is.na(daily_cases_7dts)) #%>%
+#select(date, var1, var2) %>%
+coeff = max(df$hosp_new)/max(df$daily_cases_7dts)
+
+x <-
+  ggplot(
+    df, 
+    aes(x=date)) +
+  geom_line(aes(y=hosp_new), color = "blue3") +
+  geom_line(aes(y=daily_cases_7dts*coeff), color = "red2")+
+  
+  scale_y_continuous(
+    # Features of the first axis
+    name = "New Covid Hospitalizations (blue)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./coeff, name="Reported Infections (red)", labels = comma),
+    labels = comma
+  ) +
+  #ggtitle("New Covid Hospitalizations vs Reported Weekly Infections, Denmark") +
+  labs(x = "Date")
+
+x
+
+################################################################
 
