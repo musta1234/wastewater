@@ -1,0 +1,100 @@
+---
+title: "script for Denmark dataset"
+author: "MM"
+date: "2024-05-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#import wastewater and deaths data
+#import wastewater and deaths data
+```{r import_files, echo=TRUE}
+#import the files ww_dk, cases_den, hosp_den, cases2_den, ww_usa, hosp2_usa, hosp_usa, death_usa
+ww_neth_import <- 
+  read.delim(paste0(data_loc, "/", ww_neth) ) %>% 
+  mutate(date = epiweek_to_date(Year, Week),
+         location_name = "Netherlands",
+         weekday= weekdays(date)) %>%
+  rename(viral_load = WW) %>%
+  select(date, location_name, viral_load, weekday) %>%
+  filter(!is.na(viral_load))
+
+hosp_neth_import <- 
+  # take OWID dataset and filter for Netherlands and hospitalizations
+  owid %>%
+  rename(owid_date = date) %>% # renaming this to keep tabs on original date from owid
+  filter(location_name == "Netherlands" &
+           grepl("Weekly new", indicator)) %>%
+  arrange(indicator, owid_date) %>%
+  #for each date, calculate the next saturday and how many days until next saturday
+  mutate(
+    next_saturday = next_saturday(owid_date),
+    until_saturday = next_saturday - owid_date
+    ) %>%
+  #group by indicator and next saturday
+  group_by(indicator, next_saturday) %>%
+  #for each group, calculate the maximum date, which is the most recent date we have data for that week
+  mutate(max_date = max(owid_date),
+         indicator = gsub(" ", "_", indicator)) %>%
+  #filter for the rows where the date is the maximum date, which is the most recent date we have data for that week
+  filter(max_date == owid_date) %>% 
+  rename(date = next_saturday) %>%
+  select(indicator, location_name,owid_date, date, value, weekday) %>% ungroup() %>%
+  #create columns for weekly new hospitalizations and weekly new hospitalizations per million
+  pivot_wider(names_from = indicator, values_from = value) %>%
+  rename(
+    hosp_new = Weekly_new_hospital_admissions,
+    hosp_new_permill = Weekly_new_hospital_admissions_per_million
+  )
+
+
+```
+
+
+#merge wastewater and hospitalization data
+```{r merge_ww_hosp, echo=TRUE}
+
+
+neth_dataset <- 
+  bigfile %>% 
+  filter(location_name == "Netherlands") %>%
+  select(date, location_name, inf_mean, daily_cases, variant, subvariant) %>%
+  mutate(inf_mean_7dts = 
+           rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
+         daily_cases_7dts = 
+           rollapplyr(daily_cases, 7, sum, fill = NA, align = "right")
+         ) %>%
+  full_join( . , hosp_neth_import, by = c("date", "location_name")) %>%
+  full_join( . , ww_neth_import, by = c("date", "location_name")) %>%
+  arrange(date) %>%
+  #Netherlands Dates from Covariants.org as of 2024-05-16
+  mutate(subvariant = case_when(date >= as.Date("2022-10-01") &
+                                date < as.Date("2022-12-05") ~ "BA.4 BA.5", 
+                                date >= as.Date("2022-12-05") &
+                                date < as.Date("2023-11-20") ~ "XBB", 
+                                date >= as.Date("2023-11-20") ~ "JN.1",
+                                TRUE ~ subvariant),
+         variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             )) %>% ungroup() %>%
+  filter(!is.na(viral_load)) %>% #keep only data that corresponds to weekly wastewater data
+  mutate(
+    log_viral_load = log(viral_load),
+    lead1_viral_load = dplyr::lead(viral_load, n = 1),
+    lead2_viral_load = dplyr::lead(viral_load, n = 2),
+    lead3_viral_load = lead(viral_load, n = 3),
+    lead4_viral_load = lead(viral_load, n = 4),
+    lag1_viral_load = lag(viral_load, n = 1),
+    lag2_viral_load = lag(viral_load, n = 2),
+    lag3_viral_load = lag(viral_load, n = 3),
+    lag4_viral_load = lag(viral_load, n = 4)
+  )
+  
+
+
+```
+
+

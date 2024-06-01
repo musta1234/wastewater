@@ -1,0 +1,99 @@
+---
+title: "script for US data"
+author: "MM"
+date: "2024-05-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#import wastewater and deaths data
+```{r import_files, echo=TRUE}
+
+ww_usa_import <- 
+  read.csv(paste0(data_loc, "/", ww_usa), skip = 2) %>%
+  mutate(date = ymd(Date), location_name = "United States") %>%
+  rename(viral_load = Viral.Activity.Level) %>%
+  select(date, location_name, viral_load) %>% 
+  mutate(weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+hosp2_usa_import_current <- 
+  read.csv(paste0(data_loc, "/", hosp2_usa), skip = 2) %>%
+  rename(location_name = Geography,
+         date = Date,
+         hosp_current = Currently.Hospitalized.COVID.19.Patients
+         ) %>%
+  mutate(date = mdy(date), hosp_current = as.numeric(hosp_current),
+        weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+hosp_usa_import_new <- 
+  read.csv(paste0(data_loc, "/", hosp_usa), skip =2) %>%
+  rename(location_name = Geography,
+         date = Date,
+         hosp_new = Weekly.COVID.19.Hospital.Admissions
+         ) %>%
+  mutate(date = mdy(date), hosp_new = as.numeric(hosp_new),
+         weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+death_usa_import <- 
+  read.csv(paste0(data_loc, "/", death_usa), skip = 2) %>%
+  rename(location_name = Geography,
+         date = Date,
+         deaths = Weekly.Deaths,
+         notes = Death.Data.As.Of
+         ) %>%
+  mutate(date = mdy(date), deaths = as.numeric(deaths), 
+         weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+```
+
+#merge USA files
+```{r merge_ww_hosp2, echo=TRUE}
+#merge wastewater and hosp data for USA
+ww_usa_hosp <-
+  full_join(ww_usa_import, hosp2_usa_import_current, by = c("date", "location_name")) %>%
+  full_join(., hosp_usa_import_new, by = c("date", "location_name")) %>%
+  full_join(., death_usa_import, by = c("date", "location_name")) %>%
+  select(date, viral_load, hosp_current, hosp_new, deaths) 
+
+usa_dataset <- 
+  bigfile %>% #ungroup() %>% 
+  #              mutate(variant = replace_na(variant, "NA")) %>% 
+  filter(location_name == "United States of America") %>%
+  select(date, location_name, inf_mean, daily_cases, variant, subvariant) %>%
+  mutate(inf_mean_7dts = 
+           rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
+         daily_cases_7dts = 
+           rollapplyr(daily_cases, 7, sum, fill = NA, align = "right")
+         ) %>%
+  full_join(., ww_usa_hosp, by = "date") %>%
+  arrange(date) %>%
+  mutate(subvariant = case_when(date >= as.Date("2022-10-01") &
+                                date < as.Date("2023-01-16") ~ "BA.4 BA.5", 
+                                date >= as.Date("2023-01-16") &
+                                date < as.Date("2023-12-18") ~ "XBB", 
+                                date >= as.Date("2023-12-18") ~ "JN.1",
+                                TRUE ~ subvariant),
+                  variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             ))  %>% ungroup() %>%
+  filter(!is.na(viral_load)) %>% #keep only data that corresponds to weekly wastewater data
+    mutate(
+      log_viral_load = log(viral_load),
+      lead1_viral_load = lead(viral_load, n = 1),
+      lead2_viral_load = lead(viral_load, n = 2),
+      lead3_viral_load = lead(viral_load, n = 3),
+      lead4_viral_load = lead(viral_load, n = 4),
+      lag1_viral_load = lag(viral_load, n = 1),
+      lag2_viral_load = lag(viral_load, n = 2),
+      lag3_viral_load = lag(viral_load, n = 3),
+      lag4_viral_load = lag(viral_load, n = 4)
+    )
+
+```

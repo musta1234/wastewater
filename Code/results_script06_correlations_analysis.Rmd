@@ -1,0 +1,341 @@
+---
+title: "correlation analysis"
+author: "MM"
+date: "2024-05-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r leadllag_df, echo=TRUE}
+
+create_leadlag_col <- function(df, mycol) {
+  out_df <- 
+    df %>%
+    filter(var != "log_viral_load") %>% #delete log transformed viral load
+    filter(grepl("viral", var)) %>% #select only viral load variables
+    select(var, mycol) %>% 
+    mutate(
+      multiplier = ifelse(grepl("lead", var), 1, -1),
+      leadlag = multiplier * (
+        # extract weeks lag from var
+        gsub("[^0-9.-]", "", var) %>% as.numeric()
+      ),
+      # replace NAs with zeros
+      leadlag = ifelse(is.na(leadlag), 0, leadlag)
+    ) %>%
+    select(mycol, leadlag)
+  #out_df$mycol <- mycol
+  return(out_df)
+}
+
+create_leadlag_col(usa_leadlag, "hosp_new")
+
+
+```
+# function for plotting variants
+```{r variant_plot, echo=TRUE}
+variant_plot <- function(df, mainvar = "hosp_new") {
+  df %>%
+    # Select relevant columns and filter rows
+    select(var, my_var, all_of({{mainvar}})) %>%
+    filter(my_var != "log_viral_load" & !is.na({{ mainvar }})) %>%
+    filter(grepl("viral", my_var)) %>%  # Select only viral load variables
+    
+    # Create leadlag variable
+    mutate(
+      multiplier = ifelse(grepl("lead", my_var), 1, -1),
+      leadlag = multiplier * (
+        # Extract weeks lag from my_var
+        gsub("[^0-9.-]", "", my_var) %>% as.numeric()
+      ),
+      # Replace NAs with zeros
+      leadlag = ifelse(is.na(leadlag), 0, leadlag)
+    ) %>%
+    select(var, my_var, {{mainvar}} , leadlag) %>%
+    
+    # Plot data using ggplot2
+    ggplot(aes(x = leadlag, y = get(mainvar), color = var)) +
+    geom_point() +
+    geom_line() +
+    labs(
+      # Title can be uncommented if needed
+      # title = "Netherlands: correlation between viral variant and new Covid hospitalizations, 2021-2024",
+      x = "Weeks lead (+) or lag (-)",
+      y = "correlation coefficient",
+      color = "Viral variant"  # Change legend title
+    ) +
+    theme_minimal() +
+    ylim(-1, 1)
+}
+
+variant_select <- function(df, mainvar = "hosp_new") {
+  out_df <- 
+    df %>%
+    # Select relevant columns and filter rows
+    select(var, my_var, all_of({{mainvar}})) %>%
+    filter(my_var != "log_viral_load" & !is.na({{ mainvar }})) %>%
+    filter(grepl("viral", my_var)) %>%  # Select only viral load variables
+    
+    # Create leadlag variable
+    mutate(
+      multiplier = ifelse(grepl("lead", my_var), 1, -1),
+      leadlag = multiplier * (
+        # Extract weeks lag from my_var
+        gsub("[^0-9.-]", "", my_var) %>% as.numeric()
+      ),
+      # Replace NAs with zeros
+      leadlag = ifelse(is.na(leadlag), 0, leadlag)
+    ) %>%
+    select(var, my_var, {{mainvar}} , leadlag)
+  return(out_df)
+}
+    
+
+```
+
+
+# correlation analysis USA
+```{r cor_analysis_usa, echo=TRUE}
+a <- 
+ggplot(data = create_leadlag_col(usa_leadlag, "hosp_new"),
+       aes(x = leadlag, y = hosp_new)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "USA: correlation between viral load and new Covid hospitalizations,
+       2022-2024",
+       x = "Weeks lead (+) or lag (-)",
+       y = "correlation coefficient") +
+  theme_minimal() +
+  ylim(0, 1)
+a
+
+```
+
+
+# correlation analysis Netherlands
+```{r cor_analysis_neth, echo=TRUE}
+b <- 
+ggplot(data = create_leadlag_col(neth_leadlag, "hosp_new"),
+       aes(x = leadlag, y = hosp_new)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Netherlands: correlation between viral load and new Covid hospitalizations,
+       2021-2024",
+       x = "Weeks lead (+) or lag (-)",
+       y = "correlation coefficient") +
+  theme_minimal() +
+  ylim(0, 1)
+
+b
+
+d <-
+ggplot(data = create_leadlag_col(neth_leadlag_2022_start, "hosp_new"),
+       aes(x = leadlag, y = hosp_new)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Netherlands: correlation between viral load and new Covid hospitalizations,
+       **2022-2024",
+       x = "Weeks lead (+) or lag (-)",
+       y = "correlation coefficient") +
+  theme_minimal() +
+  ylim(0, 1)
+
+d
+
+
+```
+
+# correlation analysis Denmark
+```{r cor_analysis_den, echo=TRUE}
+c <- 
+ggplot(data = create_leadlag_col(den_leadlag, "hosp_new"),
+       aes(x = leadlag, y = hosp_new)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Denmark: correlation between viral load and new Covid hospitalizations,
+       2022-2024",
+       x = "Weeks lead (+) or lag (-)",
+       y = "correlation coefficient") +
+  theme_minimal() +
+  ylim(0, 1)
+
+c
+```
+
+
+
+
+#################################################
+Redo Netherlands and Denmark starting from January 2022
+```{r cor_analysis_neth_var, echo=TRUE}
+
+View (neth_variant_cor)
+
+# Example usage:
+#Assuming `neth_variant_cor` is your input data frame
+variant_plot(neth_variant_cor, "hosp_new")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and new Covid hospitalizations,
+  2021-2024",
+       color = "Predominant variant")
+
+variant_plot(usa_variant_cor, "hosp_new")  +  
+  labs( 
+  title = "United States: correlation between viral load and new Covid hospitalizations,
+  2022-2024",
+       color = "Predominant variant")
+
+variant_plot(den_variant_cor, "hosp_new")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and new Covid hospitalizations,
+  2022-2024",
+       color = "Predominant variant")
+
+
+variant_plot(usa_subvariant_cor, "hosp_new")  +  
+  labs( 
+  title = "United States: correlation between viral load and new Covid hospitalizations,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(den_subvariant_cor, "hosp_new")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and new Covid hospitalizations,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(neth_subvariant_cor, "hosp_new")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and new Covid hospitalizations,
+  2021-2024",
+       color = "Predominant subvariant")
+
+```
+################
+
+
+#################################################
+
+
+
+```{r cor_analysis_infmean echo=TRUE}
+
+View (neth_variant_cor)
+
+# Example usage:
+#Assuming `neth_variant_cor` is your input data frame
+variant_plot(neth_variant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and estimated weekly infections,
+  2021-2024",
+       color = "Predominant variant")
+
+variant_plot(usa_variant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "United States: correlation between viral load and estimated weekly infections,
+  2022-2024",
+       color = "Predominant variant")
+
+variant_plot(den_variant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and estimated weekly infections,
+  2022-2024",
+       color = "Predominant variant")
+
+
+variant_plot(usa_subvariant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "United States: correlation between viral load and estimated weekly infections,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(den_subvariant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and estimated weekly infections,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(neth_subvariant_cor, "inf_mean_7dts")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and estimated weekly infections,
+  2021-2024",
+       color = "Predominant subvariant")
+
+```
+################
+
+```{r cor_analysis_dailycases echo=TRUE}
+
+
+# Example usage:
+#Assuming `neth_variant_cor` is your input data frame
+variant_plot(neth_variant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and reported weekly infections,
+  2021-2024",
+       color = "Predominant variant")
+
+variant_plot(usa_variant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "United States: correlation between viral load and reported weekly infections,
+  2022-2024",
+       color = "Predominant variant")
+
+variant_plot(den_variant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and reported weekly infections,
+  2022-2024",
+       color = "Predominant variant")
+
+
+variant_plot(usa_subvariant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "United States: correlation between viral load and reported weekly infections,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(den_subvariant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "Denmark: correlation between viral load and reported weekly infections,
+  2022-2024",
+       color = "Predominant subvariant")
+
+variant_plot(neth_subvariant_cor, "daily_cases_7dts")  +  
+  labs( 
+  title = "Netherlands: correlation between viral load and reported weekly infections,
+  2021-2024",
+       color = "Predominant subvariant")
+
+```
+
+################
+
+```{r cor_analysis_infmean echo=TRUE}
+
+var_subvar <- 
+  rbind(neth_variant_cor, neth_subvariant_cor) %>% 
+  rbind(., usa_variant_cor) %>% 
+  rbind(., usa_subvariant_cor) %>%
+  rbind(., den_variant_cor) %>%
+  rbind(., den_subvariant_cor)
+
+complete_corr_df <- 
+  bind_rows(den_leadlag, usa_leadlag) %>% 
+  bind_rows(., neth_leadlag) %>%
+  bind_rows(., neth_leadlag_2022_start) %>% 
+  rename(my_var = var) %>%
+  mutate(var = "Complete dataset") %>%
+  relocate(var) %>%
+  bind_rows(., var_subvar) #%>% View()
+
+write.csv(complete_corr_df, 
+            file = paste0(getwd(), "/output/leadlag/" ,"complete_corr_df_", 
+                          paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+            quote = TRUE,
+            na = "",
+            row.names = FALSE)
+
+```

@@ -48,17 +48,7 @@ bigfile <- read.csv(paste0(data_loc, "/bigfile.csv"))
     #select all date columns and convert them to date
     selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
     bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
-bigfile_usa_den <- 
-      bigfile %>% 
-      filter(location_name %in% c("United States", "Denmark")) %>%
-      mutate(weekday = weekdays(date), next_saturday = next_saturday(date),
-             #calculate trailing 7-day sums of daily cases and deaths
-             cases_wkly = rollapplyr(daily_cases, 7, sum, fill = NA, align = "right"), 
-             inf_mean_wkly = rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
-             cases_mill_wkly = rollapplyr(daily_cases_mill, 7, sum, fill = NA, align = "right"), 
-             inf_mean_mill_wkly = rollapplyr(inf_mean_mill, 7, sum, fill = NA, align = "right"),
-             )
-    
+
 ```
 
 #below is a list of all files we want to import and modify
@@ -316,7 +306,8 @@ ww_dk_hosp <-
   full_join(., bigfile %>% ungroup() %>% filter(location_name == "Denmark"), 
             by = c("date", "location_name")) %>%
   arrange(date) %>%
-  select(date, location_name, viral_load, hosp_new, hosp_new_wkly, cases, inf_mean, daily_cases, variant, subvariant) %>%
+  select(date, location_name, viral_load, hosp_new, hosp_new_wkly, 
+         cases, inf_mean, daily_cases, variant, subvariant) %>%
   
   mutate( subvariant = case_when(date >= as.Date("2023-02-27") &
                                 date < as.Date("2023-11-20") ~ "XBB", 
@@ -376,8 +367,8 @@ usa_dataset <-
          ) %>%
   full_join(., ww_usa_hosp, by = "date") %>%
   arrange(date) %>%
-  mutate(subvariant = case_when(date >= as.Date("2022-11-21") &
-                                date < as.Date("2023-01-16") ~ "BQ.1", 
+  mutate(subvariant = case_when(date >= as.Date("2022-10-01") &
+                                date < as.Date("2023-01-16") ~ "BA.4/BA.5", 
                                 date >= as.Date("2023-01-16") &
                                 date < as.Date("2023-12-18") ~ "XBB", 
                                 date >= as.Date("2023-12-18") ~ "JN.1",

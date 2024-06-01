@@ -5,51 +5,18 @@ library(tidyverse)
 
 usa_leadlag <-  
   usa_dataset %>% 
-  mutate(
-    log_viral_load = log(viral_load),
-    lead1_viral_load = lead(viral_load, n = 1),
-    lead2_viral_load = lead(viral_load, n = 2),
-    lead3_viral_load = lead(viral_load, n = 3),
-    lead4_viral_load = lead(viral_load, n = 4),
-    lag1_viral_load = lag(viral_load, n = 1),
-    lag2_viral_load = lag(viral_load, n = 2),
-    lag3_viral_load = lag(viral_load, n = 3),
-    lag4_viral_load = lag(viral_load, n = 4)
-    ) %>%
   select_if(is.numeric) %>% correlate() %>% 
   mutate(location_name = "United States of America") %>%
   rename( var = 1)
 
 neth_leadlag <-  
   neth_dataset %>% 
-  mutate(
-    log_viral_load = log(viral_load),
-    lead1_viral_load = lead(viral_load, n = 1),
-    lead2_viral_load = lead(viral_load, n = 2),
-    lead3_viral_load = lead(viral_load, n = 3),
-    lead4_viral_load = lead(viral_load, n = 4),
-    lag1_viral_load = lag(viral_load, n = 1),
-    lag2_viral_load = lag(viral_load, n = 2),
-    lag3_viral_load = lag(viral_load, n = 3),
-    lag4_viral_load = lag(viral_load, n = 4)
-  ) %>%
   select_if(is.numeric) %>% correlate() %>% 
   mutate(location_name = "Netherlands") %>%
   rename( var = 1)
 
 den_leadlag <-  
   den_dataset %>% 
-  mutate(
-    log_viral_load = log(viral_load),
-    lead1_viral_load = lead(viral_load, n = 1),
-    lead2_viral_load = lead(viral_load, n = 2),
-    lead3_viral_load = lead(viral_load, n = 3),
-    lead4_viral_load = lead(viral_load, n = 4),
-    lag1_viral_load = lag(viral_load, n = 1),
-    lag2_viral_load = lag(viral_load, n = 2),
-    lag3_viral_load = lag(viral_load, n = 3),
-    lag4_viral_load = lag(viral_load, n = 4)
-  ) %>%
   select_if(is.numeric) %>% correlate() %>% 
   mutate(location_name = "Denmark") %>%
   rename( var = 1)

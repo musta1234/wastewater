@@ -1,0 +1,107 @@
+---
+title: "script for Denmark dataset"
+author: "MM"
+date: "2024-05-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#import wastewater and deaths data
+#import wastewater and deaths data
+```{r import_files, echo=TRUE}
+#import the files ww_dk, cases_den, hosp_den, cases2_den, ww_usa, hosp2_usa, hosp_usa, death_usa
+
+ww_dk_import <- 
+  read.csv(paste0(data_loc, "/", ww_dk)) %>%
+  mutate(date = ymd(date), location_name = "Denmark") %>%
+  rename(viral_load = rna_mean_faeces, notes = lab) %>%
+  select(date, location_name, viral_load, notes) %>%
+  mutate(weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+cases_den_import <-   #hospitalization variable does not match OWID data
+  read.csv(paste0(data_loc, "/", cases_den), sep = ";",
+           check.names = FALSE) %>%
+  #hack to rename all variables using a vector
+  rename_with(
+    ~ c("Region_code", "Region", "Sampling_date", "Sex", "Total_cases", 
+        "Deaths", "Admissions", "Cumulative_deaths", "Cumulative_confirmedcases", 
+        "Cumulative_admissions", "Timestamp")
+    ) %>%
+  mutate(date = ymd(Sampling_date)) %>%
+  group_by(date) %>%
+  summarize(cases = sum(Total_cases), deaths = sum(Deaths), hosp_alt = sum(Admissions)) %>%
+  #hospitalization variable does not match OWID data
+  mutate(location_name = "Denmark", 
+         cases_wkly = rollapplyr(cases, 7, sum, fill = NA, align = "right"), 
+         deaths_wkly = rollapplyr(deaths, 7, sum, fill = NA, align = "right"),
+         hosp_alt_wkly = rollapplyr(hosp_alt, 7, sum, fill = NA, align = "right")
+         ) %>%
+  mutate(weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+hosp_den_import <-   #hosp_new matches new hospitalizations in OWID data
+  read.csv(paste0(data_loc, "/", hosp_den), sep = ";",
+           check.names = FALSE) %>%
+  rename_with(
+    ~ c("Region_code", "region", "date", "new_admissions", "timestamp")
+    ) %>%
+  mutate(date = ymd(date)) %>%
+  group_by(date) %>%
+  summarize(hosp_new = sum(new_admissions)) %>%
+  #hosp_new matches new hospitalizations in OWID data
+  mutate(location_name = "Denmark",
+         hosp_new_wkly = rollapplyr(hosp_new, 7, sum, fill = NA, align = "right"),
+         weekday = weekdays(date),
+         next_saturday = next_saturday(date))
+
+```
+
+
+#merge wastewater and hospitalization data
+```{r merge_ww_hosp, echo=TRUE}
+
+den_dataset <-
+  full_join(ww_dk_import, hosp_den_import, by = c("date", "location_name")) %>%
+  full_join(., cases_den_import, by = c("date", "location_name")) %>%
+  full_join(., bigfile %>% ungroup() %>% filter(location_name == "Denmark"), 
+            by = c("date", "location_name")) %>%
+  arrange(date) %>%
+  select(date, location_name, viral_load, hosp_new, hosp_new_wkly, cases, inf_mean, daily_cases, variant, subvariant) %>%
+  
+  mutate( subvariant = case_when(date >= as.Date("2022-10-01") &
+                                date < as.Date("2023-01-16") ~ "BA.4 BA.5", 
+                                date >= as.Date("2023-02-27") &
+                                date < as.Date("2023-11-20") ~ "XBB", 
+                              date >= as.Date("2023-11-20") ~ "JN.1",
+                              TRUE ~ subvariant),
+          variant = case_when(date >= as.Date("2022-02-02") ~ "Omicron",
+                             TRUE ~ variant
+                             ),
+          inf_mean_7dts = 
+           rollapplyr(inf_mean, 7, sum, fill = NA, align = "right"),
+          daily_cases_7dts = 
+           rollapplyr(daily_cases, 7, sum, fill = NA, align = "right"),
+          cases_7dts = 
+           rollapplyr(cases, 7, sum, fill = NA, align = "right")
+          ) %>% ungroup() %>%
+  filter(!is.na(viral_load)) %>% #keep only data that corresponds to weekly wastewater data
+  
+  mutate(
+    log_viral_load = log(viral_load),
+    lead1_viral_load = lead(viral_load, n = 1),
+    lead2_viral_load = lead(viral_load, n = 2),
+    lead3_viral_load = lead(viral_load, n = 3),
+    lead4_viral_load = lead(viral_load, n = 4),
+    lag1_viral_load = lag(viral_load, n = 1),
+    lag2_viral_load = lag(viral_load, n = 2),
+    lag3_viral_load = lag(viral_load, n = 3),
+    lag4_viral_load = lag(viral_load, n = 4)
+    )
+
+```
+
+
