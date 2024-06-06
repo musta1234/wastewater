@@ -70,7 +70,7 @@ neth_leadlag_2022_start <-
   neth_dataset %>% 
   filter(date >= as.Date("2022-01-01")) %>%
   select_if(is.numeric) %>% correlate() %>% 
-  mutate(location_name = "Netherlands") %>%
+  mutate(location_name = "Netherlands 2022 start") %>%
   rename( var = 1)
 
 den_leadlag <-  
