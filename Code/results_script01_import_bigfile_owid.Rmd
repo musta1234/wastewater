@@ -126,17 +126,6 @@ date_to_cdcdate <- function(date) {
 }
 ```
 #create custom lag and lead functions
-```{r custom_lag_lead, echo=TRUE}
-custom_lead <- function(x, n = 1) {
-  c(tail(x, -n), rep(NA, n))
-}
-
-custom_lag <- function(x, n = 1) {
-  c(rep(NA, n), head(x, -n))
-}
-
-```
-
 
 
 ###############below is a list of all files we want to import and modify

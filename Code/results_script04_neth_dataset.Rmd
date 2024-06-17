@@ -57,7 +57,6 @@ hosp_neth_import <-
 #merge wastewater and hospitalization data
 ```{r merge_ww_hosp, echo=TRUE}
 
-
 neth_dataset <- 
   bigfile %>% 
   filter(location_name == "Netherlands") %>%
@@ -91,8 +90,19 @@ neth_dataset <-
     lag2_viral_load = lag(viral_load, n = 2),
     lag3_viral_load = lag(viral_load, n = 3),
     lag4_viral_load = lag(viral_load, n = 4)
+  ) %>%
+  mutate(
+    log_lag1_viral_load = log(lag1_viral_load),
+    log_hosp = log(hosp_new),
+    log_inf = log(inf_mean_7dts),
+    log_cases = log(daily_cases_7dts),
   )
-  
+
+neth_dataset2022 <- 
+  neth_dataset %>% filter(variant == "Omicron")
+# min_date   max_date
+# 1 2022-01-08 2024-04-20
+
 
 
 ```

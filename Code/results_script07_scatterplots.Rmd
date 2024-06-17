@@ -1,0 +1,127 @@
+---
+title: "scatterplots"
+author: "MM"
+date: "2024-06-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## scatterplots for Netherlands (log)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = neth_dataset, aes(x = log_viral_load, y = hosp_new, color = variant)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Netherlands: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load (log)",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() +
+  xlim(3.5, 9) 
+
+```
+## scatterplots for Netherlands (linear scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = neth_dataset, aes(x = viral_load, y = hosp_new, color = variant)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Netherlands: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load",
+       y = "Weekly new hospitalizations") +
+  theme_minimal()
+
+```
+
+## scatterplots for Netherlands subvariant (log scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = neth_dataset %>% filter(subvariant != ""), 
+        aes(x = log_viral_load, y = hosp_new, color = subvariant)) +
+  geom_point() +
+  #geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Netherlands: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load (log)",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() +
+  xlim(3.5, 9) 
+
+```
+## scatterplots for Netherlands subvariant (linear scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = neth_dataset %>% filter(subvariant != ""), 
+        aes(x = viral_load, y = hosp_new, color = subvariant)) +
+  geom_point() +
+  #geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Netherlands: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() #+
+  #xlim(3.5, 9) 
+
+```
+
+## scatterplots for USA subvariant (linear scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = usa_dataset %>% 
+          filter(subvariant != "" 
+                 #& subvariant != "BA.1"
+                 ),
+        aes(x = viral_load, y = hosp_new, color = subvariant)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "USA: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() #+
+  #xlim(3.5, 9) 
+
+```
+
+## scatterplots for USA variant (linear scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = usa_dataset %>% 
+          filter(#subvariant != "" 
+                 #& subvariant != "BA.1"
+                 ),
+        aes(x = viral_load, y = hosp_new, color = variant)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "USA: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() #+
+  #xlim(3.5, 9) 
+
+```
+
+## scatterplots for Denmark variant (linear scale)
+
+```{r scatterplots_neth, echo=TRUE}
+
+ ggplot(data = den_dataset %>% 
+          filter(#subvariant != "" 
+                 #& subvariant != "BA.1"
+                 ),
+        aes(x = viral_load, y = hosp_new, color = variant)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Denmark: Wastewater vs Hospitalizations",
+       x = "Wastewater viral load",
+       y = "Weekly new hospitalizations") +
+  theme_minimal() #+
+  #xlim(3.5, 9) 
+
+```
+

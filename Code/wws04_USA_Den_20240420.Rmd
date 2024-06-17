@@ -425,32 +425,3 @@ neth_dataset <-
 
 ```
 
-```{r merge_ww_hosp2, echo=TRUE}
-#ww_neth_import <- 
-#hosp_neth_import <- 
-
-#US BQ.1 begins Nov 21 2022
-#US XBB start January 16, 2023
-#US JN.1 start December 18, 2023
-```
-
-```{r merge_ww_hosp2, echo=TRUE}
-
-
-```  
-  
-
-ww_neth_import <- 
-ww_usa_import <- 
-hosp2_usa_import_current <- 
-hosp_usa_import_new <- 
-death_usa_import <- 
-
-
-
-```
-
-
-
-```{r import_IHME, echo=TRUE}
-
