@@ -89,8 +89,7 @@ usa_model6 <- run_linear_regression(usa_dataset,
                                     "hosp_new", c("lag1_viral_load", "subvariant"))
 usa_model7 <- run_linear_regression(usa_dataset %>% mutate(days2022 = as.numeric(date - min(date))),
                                     "hosp_new", c("lag1_viral_load", "days2022"))
-
-                                    
+                                   
 #usa_models <- list(usa_model1, usa_model2, usa_model3)
 # Print the results
 print(usa_model1)

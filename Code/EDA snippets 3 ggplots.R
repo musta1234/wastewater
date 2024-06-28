@@ -282,6 +282,32 @@ x
 
 ################################################################
 
+df <- neth_dataset %>% 
+  filter(!is.na(viral_load) & !is.na(daily_cases_7dts)) #%>%
+#select(date, var1, var2) %>%
+coeff = max(df$viral_load)/max(df$daily_cases_7dts)
+
+x <-
+  ggplot(
+    df, 
+    aes(x=date)) +
+  geom_line(aes(y=viral_load), color = "blue3") +
+  geom_line(aes(y=daily_cases_7dts*coeff), color = "red2")+
+  
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Wastewater viral load (blue)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./coeff, name="Reported Infections (red)", labels = comma),
+    labels = comma
+  ) +
+  #ggtitle("Wastewater viral load vs Reported Weekly Infections, Denmark") +
+  labs(x = "Date")
+
+x
+
+################################################################
+
 
 #####################neth_hospnew###########################################
 
@@ -332,6 +358,34 @@ x <-
     labels = comma
   ) +
   #ggtitle("New Covid Hospitalizations vs Reported Weekly Infections, Denmark") +
+  labs(x = "Date")
+
+x
+
+################################################################
+
+
+
+df <- neth_dataset2022 %>% 
+  filter(!is.na(viral_load) & !is.na(hosp_new)) #%>%
+#select(date, var1, var2) %>%
+coeff = max(df$viral_load)/max(df$hosp_new)
+
+x <-
+  ggplot(
+    df, 
+    aes(x=date)) +
+  geom_line(aes(y=viral_load), color = "blue3") +
+  geom_line(aes(y=hosp_new*coeff), color = "red2")+
+  
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Wastewater viral load (blue)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./coeff, name="Weekly New Covid Hospitalizations (red)", labels = comma),
+    labels = comma
+  ) +
+  #ggtitle("Wastewater viral load vs Reported Weekly Infections, Denmark") +
   labs(x = "Date")
 
 x

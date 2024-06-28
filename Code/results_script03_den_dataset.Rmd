@@ -73,7 +73,9 @@ den_dataset <-
   select(date, location_name, viral_load, hosp_new, hosp_new_wkly, cases, inf_mean, daily_cases, variant, subvariant) %>%
   
   mutate( subvariant = case_when(date >= as.Date("2022-10-01") &
-                                date < as.Date("2023-01-16") ~ "BA.4 BA.5", 
+                                date < as.Date("2023-01-16") ~ "BA.4 BA.5",
+                                date >= as.Date("2023-01-16") &
+                                date < as.Date("2023-02-27") ~ "BA.45 XBB transition", 
                                 date >= as.Date("2023-02-27") &
                                 date < as.Date("2023-11-20") ~ "XBB", 
                               date >= as.Date("2023-11-20") ~ "JN.1",
