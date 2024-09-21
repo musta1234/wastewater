@@ -73,7 +73,7 @@ ww_death <-
   
   scale_y_continuous(
     # Features of the first axis
-    name = "Weekly hospitalizations (blue)",
+    name = "Weekly deaths (blue)",
     # Add a second axis and specify its features
     sec.axis = sec_axis(~./coeff, name="NWSS (red)")
   )
@@ -168,26 +168,6 @@ wwhosp_ratio
 # deaths 
 # deaths per 100k/ hosp per 100k
 
-
-
-
-
-##############################
-
-coeff = 240000
-
-pp2 <-
-  ggplot(bigfile_nwss, aes(x=date)) +
-    geom_line(aes(y=inf_mean), color = "blue3") +
-    geom_line(aes(y=National*coeff), color = "red2")+
-  
-    scale_y_continuous(
-      # Features of the first axis
-      name = "Daily estimated infections (blue)",
-      # Add a second axis and specify its features
-      sec.axis = sec_axis(~./coeff, name="NWSS (red)")
-      )
-
 # look for WW data for other 26 countries
 # check with IHME whether they used WW data as model input
 # Research letter -
@@ -203,7 +183,6 @@ pp2 <-
 
 
 # correlation overall and by strain
-#
 # look at correlations (rolling)
 # MAD mean absolute deviation
 # find a good reference in mmwr? about use of home testing
