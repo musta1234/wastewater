@@ -6,6 +6,21 @@ output: html_document
 ---
 ## This is a script that imports and merges:
 # wastewater, IHME estimates, cases, deaths and hospitalizations data from IHME
+```{r global_variables, echo=TRUE}
+
+#rm( list = ls())
+#file_loc <- "C:/Users/mustam23/OneDrive\ -\ Pfizer/Documents/Projects/wastewater/"
+file_loc <- paste0(getwd(), "/../")
+data_loc <- paste0(file_loc, "../Data/") # a location for data files 
+# check if the string contains "mustam23"
+work_laptop <- grepl("mustam23", getwd())
+
+bigfile <- read.csv(paste0(getwd(), "/data_downloads/bigfile.csv"))
+#select all date columns and convert them to date
+selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
+bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
+```
+
 
 ```{r import_nwss, echo=TRUE}
 latest_wastewater <- "/Data/NWSS/NWSSRegionalLevel_17Jan2024.tab"
