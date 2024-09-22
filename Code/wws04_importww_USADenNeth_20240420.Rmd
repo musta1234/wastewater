@@ -8,7 +8,6 @@ output: html_document
   
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# April 2023: Undercounting COVID Cases
 # clear R's brain
 dir.create(tempdir()) # solve Error in file(out, "wt") : cannot open the connection
 rm( list = ls())
@@ -39,9 +38,9 @@ work_laptop <- grepl("mustam23", getwd())
 #setwd(dirname(getwd()))
 #source("Code/epiweek_to_date_function.R", chdir=T)
 
-
 ```
 #import bigfile
+
 ```{r import_bigfile, echo=TRUE}
 # read the big file
 bigfile <- read.csv(paste0(data_loc, "/bigfile.csv"))

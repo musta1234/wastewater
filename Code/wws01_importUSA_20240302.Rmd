@@ -19,6 +19,7 @@ bigfile <- read.csv(paste0(getwd(), "/data_downloads/bigfile.csv"))
 #select all date columns and convert them to date
 selected_columns <- names(bigfile)[grep("start_|end_|date", names(bigfile))]
 bigfile <- bigfile %>% mutate_at(selected_columns, ymd) 
+
 ```
 
 

@@ -201,7 +201,7 @@ ggplot(usa_dataset_models, aes(x = hosp_new)) +
   #geom_line(aes(y=hosp_new), color = "red2") +
   #geom_point(aes(y=predicted_m1), color = "black") +
   labs(title = "Predicted Model 5 vs Observed Hospitalizations",
-       x = "Date",
+       x = "Observed",
        y = "Predicted Hospitalizations")
 
 
