@@ -15,7 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #import the files ww_dk, cases_den, hosp_den, cases2_den, ww_usa, hosp2_usa, hosp_usa, death_usa
 
 ww_dk_import <- 
-  read.csv(paste0(data_loc, "/", ww_dk)) %>%
+  read.csv(paste0(data_loc, "/", ww_dk), fileEncoding = "us-ascii",
+           check.names = TRUE) %>%
   mutate(date = ymd(date), location_name = "Denmark") %>%
   rename(viral_load = rna_mean_faeces, notes = lab) %>%
   select(date, location_name, viral_load, notes) %>%
@@ -24,7 +25,8 @@ ww_dk_import <-
 
 cases_den_import <-   #hospitalization variable does not match OWID data
   read.csv(paste0(data_loc, "/", cases_den), sep = ";",
-           check.names = FALSE) %>%
+           check.names = TRUE,
+           fileEncoding = "iso-8859-1") %>%
   #hack to rename all variables using a vector
   rename_with(
     ~ c("Region_code", "Region", "Sampling_date", "Sex", "Total_cases", 
@@ -45,7 +47,8 @@ cases_den_import <-   #hospitalization variable does not match OWID data
 
 hosp_den_import <-   #hosp_new matches new hospitalizations in OWID data
   read.csv(paste0(data_loc, "/", hosp_den), sep = ";",
-           check.names = FALSE) %>%
+           check.names = TRUE,
+           fileEncoding = "iso-8859-1") %>%
   rename_with(
     ~ c("Region_code", "region", "date", "new_admissions", "timestamp")
     ) %>%
