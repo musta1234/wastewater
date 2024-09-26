@@ -1,0 +1,154 @@
+---
+title: "Correlation analysis"
+author: "MM"
+date: "2024-05-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+############Rolling correlation###############################################
+
+```{r correlation_functions, echo=TRUE}
+# Define a function to calculate rolling correlation
+calculate_rolling_correlation <- 
+  function(x, y, width) {
+    rollapply(
+      data.frame(x, y),
+      width = width, 
+      FUN = function(z) cor(z[, 1], z[, 2], use = "complete.obs"),
+      by.column = FALSE, 
+      align = "right",
+      fill = NA
+  )
+}
+
+
+# Function to calculate correlation matrix for each group
+calc_cor <- function(df) {
+  cor(df %>% select_if(is.numeric), use = "pairwise.complete.obs")
+}
+
+# Calculate correlation matrices by group and store in a list
+
+fxn_correlations <-
+  function(data, group_var) {
+    data %>%
+      group_by({{ group_var }}) %>%
+      nest() %>%
+      mutate(correlation = map(data, calc_cor)) %>%
+      select({{ group_var }}, correlation) %>%
+      mutate(correlation = map(correlation, as.data.frame)) %>%
+      unnest(correlation) %>%
+      filter({{ group_var }} != "" & !is.na({{ group_var }})) %>%
+      mutate(my_var = names(data %>% select_if(is.numeric))) %>%
+      relocate(., my_var, .after = {{ group_var }})
+    
+  }
+# Add rolling correlation as a new column
+#sample_data <- sample_data %>%
+#  mutate(RollingCorrelation = calculate_rolling_correlation(Var1, Var2, 20))
+
+```
+
+```{r correlation_leadlag, echo=TRUE}
+usa_leadlag <-  
+  usa_dataset %>% 
+  select_if(is.numeric) %>% correlate() %>% 
+  mutate(location_name = "United States of America") %>%
+  rename( var = 1)
+
+neth_leadlag <-  
+  neth_dataset %>% 
+  select_if(is.numeric) %>% correlate() %>% 
+  mutate(location_name = "Netherlands") %>%
+  rename( var = 1)
+
+neth_leadlag_2022_start <-  
+  neth_dataset %>% 
+  filter(date >= as.Date("2022-01-01")) %>%
+  select_if(is.numeric) %>% correlate() %>% 
+  mutate(location_name = "Netherlands 2022 start") %>%
+  rename( var = 1)
+
+den_leadlag <-  
+  den_dataset %>% 
+  select_if(is.numeric) %>% correlate() %>% 
+  mutate(location_name = "Denmark") %>%
+  rename( var = 1)
+
+# Combine correlation matrices into a single data frame
+dfs <- list(
+  usa_leadlag = usa_leadlag,
+  neth_leadlag = neth_leadlag,
+  den_leadlag = den_leadlag
+  )
+  
+lapply(names(dfs), function(name) {
+  write.csv(dfs[[name]], 
+            file = paste0(getwd(), "/output/leadlag/" ,paste0(name), 
+                          paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+            quote = TRUE,
+            na = "",
+            row.names = FALSE)
+})
+
+```
+
+```{r correlation_subvariant, echo=TRUE}
+
+# Calculate correlation matrices by group in R using the tidyverse package
+
+usa_variant_cor <-  
+  fxn_correlations(usa_dataset, variant) %>% 
+  mutate(location_name = "United States of America") %>%
+  rename( var = 1)
+
+usa_subvariant_cor <-  
+  fxn_correlations(usa_dataset, subvariant) %>% 
+  mutate(location_name = "United States of America") %>%
+  rename(var = 1) 
+
+neth_variant_cor <-  
+  fxn_correlations(neth_dataset, variant) %>% 
+  mutate(location_name = "Netherlands") %>%
+  rename( var = 1)
+
+neth_subvariant_cor <-  
+  fxn_correlations(neth_dataset, subvariant) %>% 
+  mutate(location_name = "Netherlands") %>%
+  rename( var = 1)
+
+den_variant_cor <-  
+  fxn_correlations(den_dataset, variant) %>% 
+  mutate(location_name = "Denmark") %>%
+  rename( var = 1)
+
+den_subvariant_cor <-  
+  fxn_correlations(den_dataset, subvariant) %>%
+  mutate(location_name = "Denmark") %>%
+  rename( var = 1)
+
+# Combine correlation matrices into a single data frame
+dataframes <- list(
+  usa_variant_cor = usa_variant_cor,
+  usa_subvariant_cor = usa_subvariant_cor,
+  neth_variant_cor = neth_variant_cor,
+  neth_subvariant_cor = neth_subvariant_cor,
+  den_variant_cor = den_variant_cor,
+  den_subvariant_cor = den_subvariant_cor
+)
+
+lapply(names(dataframes), function(name) {
+  write.csv(dataframes[[name]], 
+            file = paste0(getwd(), "/output/leadlag/" ,paste0(name), "_",
+                          paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
+            quote = TRUE,
+            na = "",
+            row.names = FALSE)
+})
+
+```
+
