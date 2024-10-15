@@ -1,3 +1,5 @@
+#Model 7: ARIMA(1,1,1) with drift
+usa_model7 <- arima(usa_ts, order=c(1,1,1), include.drift=TRUE)
 
 # select all numeric variables from dataframe usa_dataset
 usa_ts <- 
