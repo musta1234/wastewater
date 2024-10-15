@@ -125,15 +125,11 @@ correlations_df <-
 #View(correlations_df)
 # save correlations_df as a csv file
 write.csv(correlations_df, 
-          file = paste0(getwd(), "/output/correlations_95ci_", 
+          file = paste0(getwd(), "/output_shared/correlations_95ci_", 
                         paste(format(Sys.time(), "%Y-%m-%d-%I%p")), ".csv"),
           quote = TRUE,
           na = "",
           row.names = FALSE)
-
-```
-
-```{r correlation_example, echo=TRUE}
 
 ```
 
